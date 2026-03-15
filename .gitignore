@@ -1,0 +1,7 @@
+*/*.js
+*/*.md
+README.md
+*/*/*.js
+*/.env
+*/node_modules
+*/todo.js
