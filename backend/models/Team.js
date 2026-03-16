@@ -25,3 +25,12 @@ exports.teamSchema = new mongoose.Schema (
 	{ timestamps: true},
 );
 
+exports.teamSchema.virtual ("projects", {
+	ref: "Project",
+	localField: "_id",
+	foreignField: "team",
+});
+
+exports.teamSchema.set ("toObject",{ virtuals: true });
+exports.teamSchema.set ("toJSON",{ virtuals: true });
+
