@@ -10,11 +10,11 @@ exports.projectSchema = new mongoose.Schema (
 			type: String,
 			default: "",
 		},
-		manager: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: "User",
-			required: true,
-		},
+		// manager: {
+		// 	type: mongoose.Schema.Types.ObjectId,
+		// 	ref: "User",
+		// 	required: true,
+		// },
 		progressPercentage: {
 			type: Number,
 			default: 0,

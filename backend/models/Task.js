@@ -47,11 +47,11 @@ exports.taskSchema = new mongoose.Schema (
 	{timestamps: true}
 );
 
-exports.taskSchema.virtual ("timeLog",{
-	ref: 'TimeLog',
-	localField: '_id',
-	foreignField: 'taskId'
-});
+// exports.taskSchema.virtual ("timeLogs",{
+// 	ref: 'TimeLog',
+// 	localField: '_id',
+// 	foreignField: 'taskId'
+// });
 
-exports.taskSchema.set ("toObject", { virtuals: true });
-exports.taskSchema.set ("toJSON", { virtuals: true });
+// exports.taskSchema.set ("toObject", { virtuals: true });
+// exports.taskSchema.set ("toJSON", { virtuals: true });

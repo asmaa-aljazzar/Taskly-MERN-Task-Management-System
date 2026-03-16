@@ -34,13 +34,13 @@ exports.UserSchema = new mongoose.Schema(
 			type: Date,
 			required: true,
 		},
-		reportsTo: {
-			type: mongoose.Schema.Types.ObjectId, // Stores the ID of the manager this employee reports to.
-			ref: "User", // User model.
-			default: null // If the employee has no manager.
-		},
+		// reportsTo: {
+		// 	type: mongoose.Schema.Types.ObjectId, // Stores the ID of the manager this employee reports to.
+		// 	ref: "User", // User model.
+		// 	default: null // If the employee has no manager.
+		// },
 	},
-	{ timestamps: ture }
+	{ timestamps: true }
 );
 
 /* 
@@ -56,11 +56,17 @@ exports.UserSchema.virtual ("tasks", {
 	foreignField: "assignedTo",
 });
 
-exports.UserSchema.virtual ("timeLog", {
+exports.UserSchema.virtual ("timeLogs", {
 	ref: "TimeLog",
 	localField: "_id",
 	foreignField: "userId",
 });
+
+exports.UserSchema.virtual ("teams",{
+	ref: "Team",
+	localField: "_id",
+	foreignField: "managerId",
+})
 
 exports.UserSchema.set ("toObject", { virtuals: true });
 exports.UserSchema.set ("toJSON", { virtuals: true });
