@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Defines the structure of the User document in MongoDB
-exports.UserSchema = new mongoose.Schema(
+exports.userSchema = new mongoose.Schema(
 	{
 		fullName: {
 			type: String,
@@ -50,23 +50,23 @@ exports.UserSchema = new mongoose.Schema(
 * Use for [ 1 to M ] relationships.
 */
 
-exports.UserSchema.virtual ("tasks", {
+exports.userSchema.virtual ("tasks", {
 	ref: "Task",
 	localField: "_id",
 	foreignField: "assignedTo",
 });
 
-exports.UserSchema.virtual ("timeLogs", {
+exports.userSchema.virtual ("timeLogs", {
 	ref: "TimeLog",
 	localField: "_id",
 	foreignField: "userId",
 });
 
-exports.UserSchema.virtual ("teams",{
+exports.userSchema.virtual ("teams",{
 	ref: "Team",
 	localField: "_id",
 	foreignField: "managerId",
 })
 
-exports.UserSchema.set ("toObject", { virtuals: true });
-exports.UserSchema.set ("toJSON", { virtuals: true });
+exports.userSchema.set ("toObject", { virtuals: true });
+exports.userSchema.set ("toJSON", { virtuals: true });

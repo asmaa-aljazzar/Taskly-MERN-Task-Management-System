@@ -18,7 +18,7 @@ exports.teamSchema = new mongoose.Schema (
 			}
 		],
 		description: {
-			type: Stirng,
+			type: String,
 			default: "",
 		},
 	},
