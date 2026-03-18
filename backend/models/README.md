@@ -1,0 +1,1 @@
+## This folder contains Mongoose models and schemas that define the structure of the data stored in MongoDB.
