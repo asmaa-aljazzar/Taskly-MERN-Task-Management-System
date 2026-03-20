@@ -21,6 +21,14 @@ exports.teamSchema = new mongoose.Schema (
 			type: String,
 			default: "",
 		},
+		isActive: {
+			type: Boolean,
+			default: true,
+		},
+		deletedAt: {
+			type: Date,
+			default: null,
+		}
 	},
 	{ timestamps: true},
 );

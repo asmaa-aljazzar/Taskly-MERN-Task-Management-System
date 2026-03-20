@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Display:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import "tailwindcss";
+
+/* Tailwind v4 theme configuration written directly inside CSS. */
+
+/* Theme is:*/ /**declaring design tokens—the fundamental constants of your system.*/
+@theme {
+	--font-display: "Noto Serif Display", "sans-serif";
+	--breakpoint-3xl: 1920px;
+	--color-primary: #09025A; 
+}
+
+/*Layer is:*/ /**priority and order, not just grouping.*/
+/*
+? Tailwind organizes styles into 3 main layers:
+* base → raw HTML defaults (like h1, body).
+* components → reusable UI pieces.
+* utilities → small atomic classes (text-red-500, p-4). 
+*/
+@layer base {
+	html {
+		font-family: var (--font-display);
+	}
+	body {
+		background-color: #6E98D014;
+		overflow-x: hidden;
+	}
+}
+
