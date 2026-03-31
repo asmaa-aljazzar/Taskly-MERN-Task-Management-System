@@ -1,8 +1,9 @@
 const { createUser } = require("../controllers/userController");
-
-const express = require (express);
-
+const { protect, hrOnly } = require("../middlewares/authMiddleware");
+const express = require ('express');
 const router = express.Router ();
 
-router.POST ("/users", Protect, authorizedRules ('hr'),createUser);
+router.post ("/", protect, hrOnly, createUser);
+// router.post ("/", createUser);
+
 module.exports = router;

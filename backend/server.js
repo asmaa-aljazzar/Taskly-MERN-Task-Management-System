@@ -3,6 +3,8 @@ const express = require ('express'); // Node.js Framework that makes building we
 const cors = require ('cors'); // To solve CORS error.
 const path = require ('path'); // A Node.js module with functions that simplify creating and handling file or folder paths.
 const { connectDB } = require('./config/db');
+const authRoutes = require ('./routes/authRoutes')
+const userRoutes = require ('./routes/userRoutes')
 
 //! App → Middleware → Database → Routes → Server listening
 
@@ -43,8 +45,8 @@ connectDB ();
 */
 
 // Routes: 
-// app.use ("api/auth", authRoutes);
-// app.use ("api/users", userRoutes);
+app.use ("/api/auth", authRoutes);
+app.use ("/api/users", userRoutes);
 // app.use ("api/projects", projectRoutes);
 // app.use ("api/tasks", taskRoutes);
 // app.use ("api/reports", reportRoutes);
