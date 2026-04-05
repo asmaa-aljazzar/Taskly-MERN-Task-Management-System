@@ -102,4 +102,23 @@ const createUser = async (req, res) => {
 		catchError(err, res);
 	};
 }
+
+// 2. Get all users (HR/Admin only)
+const getAllUsers = async (req, res) => { 
+	try {
+		
+	} catch {
+		catchError (err, res);
+	}
+}
+
+// 3. Get single user by ID (HR/Admin only)
+const getUserById = async (req, res) => { }
+
+// 4. Update user (HR/Admin only)
+const updateUser = async (req, res) => { }
+
+// 5. Delete user (HR/Admin only)
+const deleteUser = async (req, res) => { }
+
 module.exports = { createUser };
