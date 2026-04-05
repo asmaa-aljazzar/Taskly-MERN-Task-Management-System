@@ -102,5 +102,4 @@ const createUser = async (req, res) => {
 		catchError(err, res);
 	};
 }
-
 module.exports = { createUser };
