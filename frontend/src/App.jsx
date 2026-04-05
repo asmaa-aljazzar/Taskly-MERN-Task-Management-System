@@ -1,10 +1,9 @@
 //todo ======================== TODOs ========================
 //* import { Navigate } from "react-router-dom";
 //* <Route path="/" element={<Navigate to="/login" replace />} />
-
 //* 4. Ensure that any component with nested routes includes <Outlet />
+
 //    so that child routes render correctly
-//todo ========================================================
 import React from 'react'
 import {BrowserRouter as Router, // Controlls the entire routing system. <Router> ... </Router>.
 	Routes, // Container for all routes. <Routes> ... </Routes>.
