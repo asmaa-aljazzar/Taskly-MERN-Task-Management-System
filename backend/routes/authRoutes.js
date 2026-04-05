@@ -1,5 +1,5 @@
 const express = require ('express');
-const { logInUser, getUserProfile, updateUserProfile } = require('../controllers/authController');
+const { logInUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router ();
@@ -8,6 +8,8 @@ const router = express.Router ();
 router.post ('/login', logInUser); // Login User
 router.get ('/profile', protect, getUserProfile); // Get User Profiles
 router.put ('/profile', protect, updateUserProfile); // Update User Profile
+router.post ('/forgot-password', forgotPassword); // Forgot Password
+router.put ('/reset-password/:token', resetPassword); // Reset Password
 
 /*
 ? protect: 
