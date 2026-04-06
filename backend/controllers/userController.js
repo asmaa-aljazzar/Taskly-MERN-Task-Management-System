@@ -104,13 +104,47 @@ const createUser = async (req, res) => {
 }
 
 // 2. Get all users (HR/Admin only)
-const getAllUsers = async (req, res) => { 
+// @desc	Get all users
+// @route	GET /api/users
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+//Todo: Apply pagination:
+//? 	Pagination is the technique of splitting a large set of data into smaller, manageable chunks (pages) rather than sending everything at once.
+const getAllUsers = async (req, res) => {
 	try {
-		
-	} catch {
-		catchError (err, res);
+		// get users from database.
+		const users = await User.find();
+
+		// ? How .filter() works:
+		//* It loops through each item in the array
+		//* Returns true to keep the item, false to remove it
+		//* Creates a NEW array with only kept items
+
+		const otherUsers = users.filter(user =>
+			//! Without toString() - problem!
+			// MongoDB ObjectId comparison fails even with same value
+			user._id.toString() !== req.user._id.toString()
+			// req.user = WHO is making the request (from token, NOT from body!)
+		);
+
+		if (otherUsers.length == 0)
+			return res.status(200).json({ 
+                message: "No other users found besides you",
+                users: []
+            }); 
+
+
+		// return users.
+		return res.status(200).json({
+			message: "Users retrieved successfully",
+			users
+		});
+	} catch (err) {
+		catchError(err, res);
 	}
-}
+};
 
 // 3. Get single user by ID (HR/Admin only)
 const getUserById = async (req, res) => { }
@@ -121,4 +155,4 @@ const updateUser = async (req, res) => { }
 // 5. Delete user (HR/Admin only)
 const deleteUser = async (req, res) => { }
 
-module.exports = { createUser };
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser };
