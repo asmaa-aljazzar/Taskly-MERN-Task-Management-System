@@ -131,10 +131,10 @@ const updateUserProfile = async (req, res) => {
 		const _id = req.user._id;
 
 		// New Data are in req.body not in req.user
-		let { fullName, phoneNumber, password, profileImageUrl } = req.body;
+		let { phoneNumber, password, profileImageUrl } = req.body;
 
 		// Sanitize Input
-		if (fullName) fullName = sanitizeText(fullName);
+		// if (fullName) fullName = sanitizeText(fullName);
 		if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
 		if (profileImageUrl) profileImageUrl = sanitizeUrl(profileImageUrl);
 
@@ -148,7 +148,7 @@ const updateUserProfile = async (req, res) => {
 			return res.status(404).json({ message: "User Not Found" })
 
 		// Update fields if provided:
-		if (fullName) newData.fullName = fullName;
+		// if (fullName) newData.fullName = fullName;
 		if (phoneNumber) newData.phoneNumber = phoneNumber;
 		if (profileImageUrl) newData.profileImageUrl = profileImageUrl;
 

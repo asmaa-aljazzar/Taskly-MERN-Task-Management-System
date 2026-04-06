@@ -114,8 +114,23 @@ const createUser = async (req, res) => {
 //? 	Pagination is the technique of splitting a large set of data into smaller, manageable chunks (pages) rather than sending everything at once.
 const getAllUsers = async (req, res) => {
 	try {
+		// Use Pagination
+		//? Request: GET /api/users?page=2&limit=10
+		const page = parseInt(req.query.page) || 1; // Page number.
+		const limit = parseInt(req.query.limit) || 10; // Users per page.
+
+		// Skip users until you are in the requested page
+		const skip = (page - 1) * limit; // I don't want this users in currect page.
+
 		// get users from database.
-		const users = await User.find();
+		const users = await User.find()
+			.skip(skip)
+			.limit(limit);
+
+		const totalUsers = await User.countDocuments();
+
+		//? Math.ceil (): rounds a number UP to the nearest integer.
+		const totalPages = Math.ceil(totalUsers / limit);
 
 		// ? How .filter() works:
 		//* It loops through each item in the array
@@ -130,16 +145,34 @@ const getAllUsers = async (req, res) => {
 		);
 
 		if (otherUsers.length == 0)
-			return res.status(200).json({ 
-                message: "No other users found besides you",
-                users: []
-            }); 
+			return res.status(200).json({
+				success: true,
+				message: "No other users found besides you",
+				users: users,
+				pagination: {
+					currentPage: page,
+					totalPages: totalPages,
+					totalUsers: totalUsers,
+					itemsPerPage: limit,
+					hasNextPagr: page < totalPages,
+					hasPrevPage: page > 1,
+				}
+			});
 
 
 		// return users.
 		return res.status(200).json({
+			success: true,
 			message: "Users retrieved successfully",
-			users
+			users: users,
+			pagination: {
+				currentPage: page,
+				totalPages: totalPages,
+				totalUsers: totalUsers,
+				itemsPerPage: limit,
+				hasNextPagr: page < totalPages,
+				hasPrevPage: page > 1,
+			}
 		});
 	} catch (err) {
 		catchError(err, res);
@@ -147,12 +180,43 @@ const getAllUsers = async (req, res) => {
 };
 
 // 3. Get single user by ID (HR/Admin only)
-const getUserById = async (req, res) => { }
+// @desc	Get single user
+// @route	GET /api/users/:id
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+const getUserById = async (req, res) => {
+	try {
+		// userId form url
+		const _id = req.params.id;
+
+		// find the user
+		const user = await User.findById (_id).select ("-password");
+		if (!user)
+			return res.status (404).json ({
+				success: false,
+				message: `User Not Found`,
+				user: null,
+			});
+		
+		return res.status (200).json ({
+			success: true,
+			message: "User Found",
+			user: user,
+		})
+	} catch (err) {
+		catchError (err, res);
+	}
+};
 
 // 4. Update user (HR/Admin only)
+// -->
 const updateUser = async (req, res) => { }
 
 // 5. Delete user (HR/Admin only)
 const deleteUser = async (req, res) => { }
+
+// 	GET /api/users/role/:role   // Get users by role
 
 module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser };
