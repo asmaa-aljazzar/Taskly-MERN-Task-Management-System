@@ -43,6 +43,10 @@ const userSchema = new mongoose.Schema({
 		type: Date,
 		default: undefined,
 	},
+	isDeleted: {
+		type: Boolean,
+		default: false,
+	},
 	// reportsTo: {
 	// 	type: mongoose.Schema.Types.ObjectId, // Stores the ID of the manager this employee reports to.
 	// 	ref: "User", // User model.

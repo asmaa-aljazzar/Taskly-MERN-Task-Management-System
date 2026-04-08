@@ -109,7 +109,8 @@ const getUserProfile = async (req, res) => {
 				role: user.role,
 				phoneNumber: user.phoneNumber,
 				profileImageUrl: user.profileImageUrl,
-				hireDate: user.hireDate
+				hireDate: user.hireDate,
+				isDeleted: user.isDeleted
 			},
 		});
 		
@@ -131,11 +132,11 @@ const updateUserProfile = async (req, res) => {
 		const _id = req.user._id;
 
 		// New Data are in req.body not in req.user
-		let { phoneNumber, password, profileImageUrl } = req.body;
+		let { password, profileImageUrl } = req.body;
 
 		// Sanitize Input
 		// if (fullName) fullName = sanitizeText(fullName);
-		if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
+		// if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
 		if (profileImageUrl) profileImageUrl = sanitizeUrl(profileImageUrl);
 
 		const newData = {}; // Empty obj to fill.
@@ -149,7 +150,7 @@ const updateUserProfile = async (req, res) => {
 
 		// Update fields if provided:
 		// if (fullName) newData.fullName = fullName;
-		if (phoneNumber) newData.phoneNumber = phoneNumber;
+		// if (phoneNumber) newData.phoneNumber = phoneNumber;
 		if (profileImageUrl) newData.profileImageUrl = profileImageUrl;
 
 		if (password) {

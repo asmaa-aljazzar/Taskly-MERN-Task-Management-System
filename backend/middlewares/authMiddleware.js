@@ -25,7 +25,7 @@ const protect = async (req, res, next) => {
 			// Add req.user to the request object
 			// Remove Password from user object
 			req.user = await User.findById(decoded.id).select("-password");
-			if (!req.user)
+			if (!req.user || req.user.isDeleted)
 				return res.status(401).json({ message: 'User not found' });
 			next();
 		}
@@ -33,7 +33,7 @@ const protect = async (req, res, next) => {
 			res.status(401).json({ message: "Unauthorized, not token" });
 		}
 	} catch (err) {
-		res.status(401).json ({ message: "Token faild", err: err.message });
+		res.status(401).json({ message: "Token faild", err: err.message });
 		// catchError(err, res);
 	}
 }
@@ -44,6 +44,8 @@ const hrOnly = async (req, res, next) => {
 	try {
 		if (req.user && req.user.role == "hr") {
 			next();
+		} else {
+			return res.status(403).json({ message: "Access denied. HR only." });
 		}
 	} catch (err) {
 		// res.status(403).json({ message: "Access denied, hr only", });
@@ -54,12 +56,14 @@ const hrOnly = async (req, res, next) => {
 // Middleware for Manager: Manager Permissions
 const managerOnly = async (req, res, next) => {
 	try {
-		if (req.user && req.user.role == "hr") {
+		if (req.user && req.user.role == "manager") {
 			next();
+		} else {
+			return res.status(403).json({ message: "Access denied. Manager only." });
 		}
 	} catch (err) {
 		// res.status(403).json({ message: "Access denied, manager only", });
-		catchError (err, res);
+		catchError(err, res);
 	}
 }
 
