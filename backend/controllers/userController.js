@@ -8,6 +8,8 @@ const {
 	sanitizeText,
 	sanitizePhone
 } = require('../utils/validation');
+const { verify } = require('jsonwebtoken');
+const { isValidElement } = require('react');
 
 // 1. Create new user (HR only)
 // @desc	create a new user (HR only)
@@ -38,17 +40,18 @@ const createUser = async (req, res) => {
 			phoneNumber = sanitizePhone(phoneNumber);
 
 			// Validate
-			if (!validateEmail(email)) {
+			if (email && !validateEmail(email)) {
 				return res.status(400).json({
 					message: "Invalid email format"
 				});
 			}
 
-			if (!validatePassword(password)) {
-				return res.status(400).json({
-					message: "Password must be at least 8 characters with uppercase, lowercase, number, and special character"
-				});
-			}
+			// if (!validatePassword(password)) {
+			// 	return res.status(400).json({
+			// 		message: "Password must be at least 8 characters with uppercase, lowercase, number, and special character"
+			// 	});
+			// }
+
 			//! Check if user already exist:
 			//* Avoid unnecessary hash.
 			//* Avoid race conditions.
@@ -102,4 +105,253 @@ const createUser = async (req, res) => {
 		catchError(err, res);
 	};
 }
-module.exports = { createUser };
+
+// 2. Get all users (HR/Admin only)
+// @desc	Get all users
+// @route	GET /api/users
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+//Todo: Apply pagination:
+//? 	Pagination is the technique of splitting a large set of data into smaller, manageable chunks (pages) rather than sending everything at once.
+const getAllUsers = async (req, res) => {
+	try {
+		if (!req.user) {
+			return res.status(404).json({
+				success: false,
+				message: "Something Wrong Happens",
+			});
+		}
+		const hr = req.user;
+
+		// Use Pagination
+		//? Request: GET /api/users?page=2&limit=10
+		const page = parseInt(req.query.page) || 1; // Page number.
+		const limit = parseInt(req.query.limit) || 10; // Users per page.
+
+		// Skip users until you are in the requested page
+		const skip = (page - 1) * limit; // I don't want this users in currect page.
+
+		// get users from database.
+		const users = await User.find({isDeleted: false})
+			.skip(skip)
+			.limit(limit);
+
+		// ? How .filter() works:
+		//* It loops through each item in the array
+		//* Returns true to keep the item, false to remove it
+		//* Creates a NEW array with only kept items
+
+		const otherUsers = users.filter(user =>
+			//! Without toString() - problem!
+			// MongoDB ObjectId comparison fails even with same value
+			(user._id.toString() !== req.user._id.toString())
+			// req.user = WHO is making the request (from token, NOT from body!)
+		);
+
+		const totalUsers = await User.countDocuments({isDeleted: false});
+
+		//? Math.ceil (): rounds a number UP to the nearest integer.
+		const totalPages = Math.ceil(totalUsers / limit);
+
+		if (otherUsers.length == 0)
+			return res.status(200).json({
+				success: true,
+				message: "There is no other users found besides you",
+				users: [hr],
+			});
+
+		// return users.
+		return res.status(200).json({
+			success: true,
+			message: "Users retrieved successfully",
+			users: users,
+			pagination: {
+				currentPage: page,
+				totalPages: totalPages,
+				totalUsers: totalUsers,
+				itemsPerPage: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1,
+			}
+		});
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+// 3. Get single user by ID (HR/Admin only)
+// @desc	Get single user
+// @route	GET /api/users/:id
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+
+const getUserById = async (req, res) => {
+	try {
+		// userId form url
+		const _id = req.params.id;
+
+		// find the user
+		const user = await User.findById(_id).select("-password");
+		if (!user || user.isDeleted)
+			return res.status(404).json({
+				success: false,
+				message: `User Not Found`,
+				user: null,
+			});
+
+		return res.status(200).json({
+			success: true,
+			message: "User Found",
+			user: user,
+		})
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+// 4. Update user (HR/Admin only)
+// @desc	Update single user data.
+// @route	PUT /api/users/:id
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+const updateUser = async (req, res) => {
+	try {
+		// Get user id from URL params.
+		const _id = req.params.id;
+
+		// find the user by id.
+		const targetUser = await User.findById(_id);
+
+		if (!targetUser || targetUser.isDeleted)
+			return res.status(400).json({
+				success: false,
+				message: "User Not Found",
+			})
+
+		// Get user business fields data req body.
+		//	fullname
+		//	email
+		//	phoneNumber
+		//	role
+		//	hireDate
+		let {
+			fullName,
+			email,
+			phoneNumber,
+			role,
+		} = req.body;
+
+		// sanitize fields
+		if (fullName) fullName = sanitizeText(fullName);
+		if (email) email = sanitizeEmail(email);
+		if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
+		if (role) role = sanitizeText(role);
+
+		let hireDate;
+
+		// convert STRING to DATE object
+		if (req.body.hireDate) hireDate = new Date(req.body.hireDate);
+
+		if (hireDate && hireDate > Date.now())
+			return res.status(400).json({
+				success: false,
+				message: "Hire date can't be in future!",
+			});
+
+		// Validate Email
+		if (email && !validateEmail(email))
+			return res.status(400).json({
+				success: false,
+				message: "Invalid Email Format!",
+			});
+
+		const isExist = await User.findOne({
+			email,
+			_id: { $ne: _id }, // the email exist but not the current user
+		});
+
+		if (email && isExist)
+			return res.status(409).json({
+				success: false,
+				message: "Email is already in use"
+			});
+
+		if (role && !['hr', 'manager', 'employee'].includes(role)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid role: must be one of [hr, manager, employee]"
+			})
+		};
+
+		if (role && targetUser.role === 'hr' && role !== targetUser.role)
+			return res.status(403).json({
+				success: false,
+				message: "Cannot change HR user's role"
+			});
+
+
+		// update User schema
+
+		// create a new object to carry user data.
+
+		if (fullName) targetUser.fullName = fullName;
+		if (email) targetUser.email = email;
+		if (phoneNumber) targetUser.phoneNumber = phoneNumber;
+		if (role) targetUser.role = role;
+		if (hireDate) targetUser.hireDate = hireDate;
+		await targetUser.save();
+
+		const updatedUser = await User.findById(_id).select("-password");
+
+
+		return res.status(200).json({
+			success: true,
+			message: `${updatedUser.fullName} Information Updated Successfully`,
+			user: updatedUser,
+		});
+
+	} catch (err) {
+		catchError(err, res);
+	}
+}
+
+// 5. Delete user (HR/Admin only)
+// @desc	Delete user (Soft Delete).
+// @route	DELETE /api/users/:id
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+const deleteUser = async (req, res) => {
+	try {
+		const _id = req.params.id;
+		const user = await User.findById(_id).select("-password");
+		if (!user || user.isDeleted)
+			return res.status(404).json({ success: false, message: "User not found or already deleted" });
+		if (user && !user.isDeleted) {
+			user.isDeleted = true;
+			await user.save();
+			return res.status(200).json({
+				success: true,
+				message: "User Successfully Deleted",
+				user: {
+					_id: user._id,
+					fullName: user.fullName,
+					isDeleted: user.isDeleted
+				}
+			});
+		}
+	} catch (err) {
+		catchError(err, res);
+	}
+}
+
+// 	GET /api/users/role/:role   // Get users by role
+
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser };

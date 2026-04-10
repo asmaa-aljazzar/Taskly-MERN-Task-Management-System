@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
 	},
 	profileImageUrl: {
 		type: String,
-		default: "",
+		default: "/uploads/default-avatar.jpg",
 	},
 	role: {
 		type: String,
@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema({
 	resetPasswordExpires: {
 		type: Date,
 		default: undefined,
+	},
+	isDeleted: {
+		type: Boolean,
+		default: false,
 	},
 	// reportsTo: {
 	// 	type: mongoose.Schema.Types.ObjectId, // Stores the ID of the manager this employee reports to.

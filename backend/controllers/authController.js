@@ -39,7 +39,7 @@ const logInUser = async (req, res) => {
 		email = sanitizeEmail(email);
 
 		// Find user by email (if not found → 401)
-		const user = await User.findOne({ email }).select('+password');
+		const user = await User.findOne({ email, isDeleted: false }).select('+password');
 		if (!user) {
 			return res.status(401).json({
 				message: "Account not found",
@@ -96,7 +96,7 @@ const getUserProfile = async (req, res) => {
 		const user = await User.findById(id).select('-password');
 
 		// If user not found → 404
-		if (!user)
+		if (!user || user.isDeleted)
 			return res.status(404).json({ message: "User Not Found!" });
 
 		// Send user data (fullName, email, role, phoneNumber, profileImageUrl, hireDate)
@@ -109,10 +109,11 @@ const getUserProfile = async (req, res) => {
 				role: user.role,
 				phoneNumber: user.phoneNumber,
 				profileImageUrl: user.profileImageUrl,
-				hireDate: user.hireDate
+				hireDate: user.hireDate,
+				isDeleted: user.isDeleted
 			},
 		});
-		
+
 	} catch (err) {
 		// res.status(500).json({ message: "Server error", error: err.message });
 		catchError(err, res);
@@ -131,11 +132,11 @@ const updateUserProfile = async (req, res) => {
 		const _id = req.user._id;
 
 		// New Data are in req.body not in req.user
-		let { fullName, phoneNumber, password, profileImageUrl } = req.body;
+		let { password, profileImageUrl } = req.body;
 
 		// Sanitize Input
-		if (fullName) fullName = sanitizeText(fullName);
-		if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
+		// if (fullName) fullName = sanitizeText(fullName);
+		// if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
 		if (profileImageUrl) profileImageUrl = sanitizeUrl(profileImageUrl);
 
 		const newData = {}; // Empty obj to fill.
@@ -144,13 +145,13 @@ const updateUserProfile = async (req, res) => {
 		const user = await User.findById(_id);
 
 		// If user not found → 404
-		if (!user)
+		if (!user || user.isDeleted)
 			return res.status(404).json({ message: "User Not Found" })
 
 		// Update fields if provided:
-		if (fullName) newData.fullName = fullName;
-		if (phoneNumber) newData.phoneNumber = phoneNumber;
-		if (profileImageUrl) newData.profileImageUrl = profileImageUrl;
+		// if (fullName) newData.fullName = fullName;
+		// if (phoneNumber) newData.phoneNumber = phoneNumber;
+		// if (profileImageUrl) newData.profileImageUrl = profileImageUrl;
 
 		if (password) {
 			// Regex (Regular Expression) is a pattern used to match, search, or validate text.
@@ -197,6 +198,65 @@ const updateUserProfile = async (req, res) => {
 	}
 };
 
+// In your authController.js, add these:
+
+const uploadProfileImage = async (req, res) => {
+	try {
+		// Handle image upload
+		if (!req.file) return res.status(400).json({
+			success: false,
+			message: "No file uploaded",
+		});
+		// Check isDeleted
+		const user = await User.findById(req.user.id);
+		// const user = await User.findOne({ _id: req.user.id });
+
+		if (!user || user.isDeleted) return res.status(400).json({
+			success: false,
+			message: "User not found",
+		})
+
+		const imageUrl = `/uploads/${req.file.filename}`;
+		user.profileImageUrl = imageUrl;
+		await user.save();
+		res.status(200).json({ imageUrl });
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+const deleteProfileImage = async (req, res) => {
+	try {
+		// 1. Check if user exists and not deleted
+		const user = await User.findById(req.user.id);
+		if (!user || user.isDeleted) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// 2. Just set the default image path
+		user.profileImageUrl = "/uploads/default-avatar.jpg";
+		await user.save();
+
+		// 3. Return success response
+		return res.status(200).json({
+			success: true,
+			message: "Profile image reset to default",
+			profileImageUrl: "/uploads/default-avatar.jpg",
+			user: {
+				_id: user._id,
+				fullName: user.fullName,
+				profileImageUrl: user.profileImageUrl
+			}
+		});
+
+	} catch (err) {
+		catchError(err, res);
+	}
+}
+
 // @desc	Forgot password
 // @route	POST /api/auth/forgot-password
 // @access	Public
@@ -210,10 +270,10 @@ const forgotPassword = async (req, res) => {
 		const { email } = req.body;
 
 		if (!email)
-			res.status(400).json({ message: "Email is required" });
+			return res.status(400).json({ message: "Email is required" });
 
 		// look for the email secretly
-		const user = await User.findOne({ email });
+		const user = await User.findOne({ email, isDeleted: false });
 
 		// Success message if fail [Security]
 		if (!user)
@@ -320,6 +380,7 @@ const resetPassword = async (req, res) => {
 
 		// Find the user by the token
 		const user = await User.findOne({
+			isDeleted: false,
 			resetPasswordToken: hashToken,
 			resetPasswordExpires: { $gt: Date.now() }
 		});
@@ -331,6 +392,11 @@ const resetPassword = async (req, res) => {
 
 		// Get the new Password
 		const { password } = req.body;
+		if (!password) {
+			return res.status(400).json({
+				message: "Please provide a new password"
+			});
+		};
 
 		if (password) {
 			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#])[A-Za-z\d@$!%*?&.#]{8,}$/;
@@ -359,4 +425,4 @@ const resetPassword = async (req, res) => {
 	}
 }       // Reset with token-> One-time use 
 
-module.exports = { logInUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword };
+module.exports = { logInUser, getUserProfile, updateUserProfile, uploadProfileImage, deleteProfileImage, forgotPassword, resetPassword };
