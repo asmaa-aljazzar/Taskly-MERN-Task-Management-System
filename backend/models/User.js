@@ -84,7 +84,7 @@ userSchema.virtual("teams", {
 userSchema.set("toObject", { virtuals: true });
 userSchema.set("toJSON", { virtuals: true });
 
-//! Create and export the MODEL, not the schema
+//! Create and export texportshe MODEL, not the schema
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

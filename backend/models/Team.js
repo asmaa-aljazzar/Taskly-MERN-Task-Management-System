@@ -1,6 +1,7 @@
 const mongoose = require ('mongoose');
 
-exports.teamSchema = new mongoose.Schema (
+// always populate the Many side.
+const teamSchema = new mongoose.Schema (
 	{
 		name: {
 			type: String,
@@ -21,24 +22,26 @@ exports.teamSchema = new mongoose.Schema (
 			type: String,
 			default: "",
 		},
-		isActive: {
+		isDeleted: {
 			type: Boolean,
-			default: true,
+			default: false,
 		},
-		deletedAt: {
-			type: Date,
-			default: null,
-		}
+		// deletedAt: {
+		// 	type: Date,
+		// 	default: null,
+		// }
 	},
 	{ timestamps: true},
 );
 
-exports.teamSchema.virtual ("projects", {
+teamSchema.virtual ("projects", {
 	ref: "Project",
 	localField: "_id",
 	foreignField: "team",
 });
 
-exports.teamSchema.set ("toObject",{ virtuals: true });
-exports.teamSchema.set ("toJSON",{ virtuals: true });
+teamSchema.set ("toObject",{ virtuals: true });
+teamSchema.set ("toJSON",{ virtuals: true });
 
+const Team = mongoose.model ('Team', teamSchema);
+module.exports = Team;
