@@ -35,13 +35,17 @@ const logInUser = async (req, res) => {
 
 		// Check if both exist (if not → 400)
 		if (!email || !password)
-			return res.status(400).json({ message: "Please provide both email and password" })
+			return res.status(400).json({
+				success: false,
+				message: "Please provide both email and password"
+			});
 		email = sanitizeEmail(email);
 
 		// Find user by email (if not found → 401)
 		const user = await User.findOne({ email, isDeleted: false }).select('+password');
 		if (!user) {
 			return res.status(401).json({
+				success: false,
 				message: "Account not found",
 				suggestion: "Please check your email or contact HR to request access"
 			});
@@ -51,6 +55,7 @@ const logInUser = async (req, res) => {
 		const isValidPassword = await bcrypt.compare(password, user.password);
 		if (!isValidPassword) {
 			return res.status(401).json({
+				success: false,
 				message: "Invalid password",
 				action: "Please try again or contact HR to reset your password"
 			});
@@ -61,6 +66,7 @@ const logInUser = async (req, res) => {
 
 		// Send response: token + user (id, fullName, email, role, ...)
 		return res.status(200).json({
+			success: true,
 			message: "Login Successfull",
 			token,
 			user: {
@@ -97,10 +103,14 @@ const getUserProfile = async (req, res) => {
 
 		// If user not found → 404
 		if (!user || user.isDeleted)
-			return res.status(404).json({ message: "User Not Found!" });
+			return res.status(404).json({
+				success: false,
+				message: "User Not Found!"
+			});
 
 		// Send user data (fullName, email, role, phoneNumber, profileImageUrl, hireDate)
 		return res.status(200).json({
+			success: true,
 			message: "User Found",
 			user: {
 				_id: user._id,
@@ -146,7 +156,10 @@ const updateUserProfile = async (req, res) => {
 
 		// If user not found → 404
 		if (!user || user.isDeleted)
-			return res.status(404).json({ message: "User Not Found" })
+			return res.status(404).json({
+				success: false,
+				message: "User Not Found"
+			})
 
 		// Update fields if provided:
 		// if (fullName) newData.fullName = fullName;
@@ -157,6 +170,7 @@ const updateUserProfile = async (req, res) => {
 			// Regex (Regular Expression) is a pattern used to match, search, or validate text.
 			if (!validatePassword(password)) {
 				return res.status(400).json({
+					success: false,
 					message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
 				});
 			}
@@ -172,7 +186,10 @@ const updateUserProfile = async (req, res) => {
 
 		// Only process if there is data to update in newData.
 		if (Object.keys(newData).length == 0)
-			return res.status(400).json({ message: 'No fields to update' });
+			return res.status(400).json({
+				success: false,
+				message: 'No fields to update'
+			});
 
 		newData.updatedAt = new Date();
 
@@ -187,6 +204,7 @@ const updateUserProfile = async (req, res) => {
 		// Save updated user
 		// Send response with updated user (exclude password)
 		return res.status(200).json({
+			success: true,
 			message: "User Data updated successfully",
 			user: updatedUser,
 		});
@@ -219,7 +237,10 @@ const uploadProfileImage = async (req, res) => {
 		const imageUrl = `/uploads/${req.file.filename}`;
 		user.profileImageUrl = imageUrl;
 		await user.save();
-		res.status(200).json({ imageUrl });
+		res.status(200).json({
+			success: true,
+			imageUrl
+		});
 	} catch (err) {
 		catchError(err, res);
 	}
@@ -270,14 +291,20 @@ const forgotPassword = async (req, res) => {
 		const { email } = req.body;
 
 		if (!email)
-			return res.status(400).json({ message: "Email is required" });
+			return res.status(400).json({
+				success: false,
+				message: "Email is required"
+			});
 
 		// look for the email secretly
 		const user = await User.findOne({ email, isDeleted: false });
 
 		// Success message if fail [Security]
 		if (!user)
-			return res.status(200).json({ message: "If an account exists, you will receive a reset email" });
+			return res.status(200).json({
+				success: true,
+				message: "If an account exists, you will receive a reset email"
+			});
 
 		// Generate reset token.
 		const resetToken = crypto.randomBytes(32).toString('hex');
@@ -303,8 +330,10 @@ const forgotPassword = async (req, res) => {
 		console.log(resetUrl);
 		console.log("⏰ This link expires in 10 minutes");
 		console.log("=".repeat(60) + "\n");
-
-		return res.status(200).json({ message: "If an account exists, you will receive a reset email" });
+		return res.status(200).json({
+			success: true,
+			message: "If an account exists, you will receive a reset email"
+		});
 		// 6. Return a Generic Success Message
 		// Always say something like: "If an account exists, you'll receive a reset email"
 		// Don't confirm whether the email exists or not
@@ -387,6 +416,7 @@ const resetPassword = async (req, res) => {
 
 		if (!user)
 			return res.status(400).json({
+				success: false,
 				message: "User Not Found or Token Expire"
 			});
 
@@ -394,6 +424,7 @@ const resetPassword = async (req, res) => {
 		const { password } = req.body;
 		if (!password) {
 			return res.status(400).json({
+				success: false,
 				message: "Please provide a new password"
 			});
 		};
@@ -402,6 +433,7 @@ const resetPassword = async (req, res) => {
 			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#])[A-Za-z\d@$!%*?&.#]{8,}$/;
 			if (!passwordRegex.test(password)) {
 				return res.status(400).json({
+					success: false,
 					message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
 				});
 			}
@@ -418,6 +450,7 @@ const resetPassword = async (req, res) => {
 		}
 		//Set resetPasswordToken, resetPasswordExpires to null/"" after set the password 
 		return res.status(200).json({
+			success: true,
 			message: 'Password updated successfully!',
 		});
 	} catch (err) {

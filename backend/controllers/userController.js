@@ -113,8 +113,6 @@ const createUser = async (req, res) => {
 // @Headers: 
 // Authorization: Bearer HR_TOKEN_HERE
 // Content-Type: application/json
-//Todo: Apply pagination:
-//? 	Pagination is the technique of splitting a large set of data into smaller, manageable chunks (pages) rather than sending everything at once.
 const getAllUsers = async (req, res) => {
 	try {
 		if (!req.user) {
@@ -188,7 +186,6 @@ const getAllUsers = async (req, res) => {
 // @Headers: 
 // Authorization: Bearer HR_TOKEN_HERE
 // Content-Type: application/json
-
 const getUserById = async (req, res) => {
 	try {
 		// userId form url
@@ -229,7 +226,7 @@ const updateUser = async (req, res) => {
 		const targetUser = await User.findById(_id);
 
 		if (!targetUser || targetUser.isDeleted)
-			return res.status(400).json({
+			return res.status(404).json({
 				success: false,
 				message: "User Not Found",
 			})
