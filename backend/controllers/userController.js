@@ -352,6 +352,78 @@ const deleteUser = async (req, res) => {
 	}
 }
 
-// 	GET /api/users/role/:role   // Get users by role
+// 2. Get users by role (HR/Admin only)
+// @desc	Get users with same role
+// @route	GET /api/users/role/:role
+// @access	Private/ HR
+// @Headers: 
+// Authorization: Bearer HR_TOKEN_HERE
+// Content-Type: application/json
+const getUsersByRole = async (req, res) => {
+    try {
+        const { role } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser };
+        // Validate role
+        const validRoles = ['hr', 'manager', 'employee'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid role. Must be: ${validRoles.join(', ')}`
+            });
+        }
+
+        // Find users by role (active only)
+        const users = await User.find({ 
+            role, 
+            isDeleted: false 
+        })
+        .select('-password')
+        .skip(skip)
+        .limit(limit)
+        .sort ({ createdAt: -1 }); // Sort newest first | -1 = descending, 1 = ascending
+
+        const totalUsers = await User.countDocuments({ 
+            role, 
+            isDeleted: false 
+        });
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        if (users.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: `No ${role} users found`,
+                users: [],
+                pagination: {
+                    currentPage: page,
+                    totalPages: 0,
+                    totalUsers: 0,
+                    itemsPerPage: limit,
+                    hasNextPage: false,
+                    hasPrevPage: false
+                }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `${users.length} ${role}(s) found`,
+            users,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalUsers,
+                itemsPerPage: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
+
+    } catch (err) {
+        catchError(err, res);
+    }
+};
+
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, getUsersByRole };
