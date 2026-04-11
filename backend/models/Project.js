@@ -1,6 +1,6 @@
 const mongoose = require ('mongoose');
 
-exports.projectSchema = new mongoose.Schema (
+const projectSchema = new mongoose.Schema (
 	{
 		projectName: {
 			type: String,
@@ -15,7 +15,7 @@ exports.projectSchema = new mongoose.Schema (
 		// 	ref: "User",
 		// 	required: true,
 		// },
-		team: {
+		teamId: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Team",
 			required: true,
@@ -31,13 +31,22 @@ exports.projectSchema = new mongoose.Schema (
 		endDate: {
 			type: Date,
 			default: null,
+		},
+		status: {
+			type: String,
+			enum: ["pending", "in-progress", "done"],
+			default: "pending",
+		},
+		isDeleted: {
+			type: Boolean,
+			default: false,
 		}
 	},
 	{ timestamps: true },
 );
 
 //? Virtual field to get all tasks for this project
-exports.projectSchema.virtual ('tasks',
+projectSchema.virtual ('tasks',
 	{
 		ref: 'Task',
 		localField: '_id',
@@ -47,5 +56,8 @@ exports.projectSchema.virtual ('tasks',
 
 // Include virtuals when converting documents to plain objects or to JSON (API res).
 // mongoose will not ignore virtuals.
-exports.projectSchema.set ('toObject', { virtuals: true });
-exports.projectSchema.set ('toJSON', { virtuals: true });
+projectSchema.set ('toObject', { virtuals: true });
+projectSchema.set ('toJSON', { virtuals: true });
+
+const Project = mongoose.model ("Project", projectSchema);
+module.exports = Project;
