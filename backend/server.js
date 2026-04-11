@@ -6,6 +6,7 @@ const { connectDB } = require('./config/db');
 const authRoutes = require ('./routes/authRoutes');
 const userRoutes = require ('./routes/userRoutes');
 const teamRoutes = require ('./routes/teamRoutes');
+const projectRoutes = require ('./routes/projectsRoutes');
 
 //! App → Middleware → Database → Routes → Server listening
 
@@ -60,7 +61,7 @@ connectDB ();
 app.use ("/api/auth", authRoutes);
 app.use ("/api/users", userRoutes);
 app.use ("/api/teams", teamRoutes);
-// app.use ("api/projects", projectRoutes);
+app.use ("/api/projects", projectRoutes);
 // app.use ("api/tasks", taskRoutes);
 // app.use ("api/reports", reportRoutes);
 // app.use ("api/time-logs", timeLogRoutes);
