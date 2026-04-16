@@ -1,14 +1,17 @@
 const Project = require('../models/Project');
+const Task = require('../models/Task');
 const Team = require('../models/Team');
 const catchError = require('../utils/catchError');
 const { sanitizeText } = require('../utils/validation');
 
-// 1. Create new project (HR only)
-// @desc	create a new project (HR only)
+//*======================== [PROJECTS] ======================
+
+// 1. Create new project (Manager only)
+// @desc	create a new project (Manager only)
 // @route	POST /api/projects
-// @access	Private/ HR
+// @access	Private/ Manager
 // @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
+// Authorization: Bearer Manager_TOKEN_HERE
 // Content-Type: application/json
 const createProject = async (req, res) => {
 	try {
@@ -115,12 +118,12 @@ const createProject = async (req, res) => {
 	};
 };
 
-// 2. Get all projects (HR/Admin only)
+// 2. Get all projects (Manager/Admin only)
 // @desc	Get all projects
 // @route	GET /api/projects
-// @access	Private/ HR
+// @access	Private/ Manager
 // @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
+// Authorization: Bearer Manager_TOKEN_HERE
 // Content-Type: application/json
 const getAllProjects = async (req, res) => {
 	try {
@@ -176,12 +179,12 @@ const getAllProjects = async (req, res) => {
 	}
 };
 
-// 3. Get single project by ID (HR/Admin only)
+// 3. Get single project by ID (Manager/Admin only)
 // @desc	Get single project
 // @route	GET /api/projects/:id
-// @access	Private/ HR
+// @access	Private/ Manager
 // @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
+// Authorization: Bearer Manager_TOKEN_HERE
 // Content-Type: application/json
 const getProjectById = async (req, res) => {
 	try {
@@ -246,9 +249,13 @@ const updateProject = async (req, res) => {
 					message: "Team Not Found",
 				});
 			}
-			targetProject.teamId = teamId;
 		}
-
+		if (status && !["pending", "in-progress", "done"].includes(status)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid status value. Must be one of: pending, in-progress, done",
+			})
+		}
 		// Date validations (same as create)
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -293,6 +300,9 @@ const updateProject = async (req, res) => {
 		// Update fields
 		if (projectName) targetProject.projectName = projectName;
 		if (description) targetProject.description = description;
+		if (teamId) targetProject.teamId = teamId;
+		if (startDate) targetProject.startDate = startDate;
+		if (endDate) targetProject.endDate = endDate;
 		if (status) targetProject.status = status;
 
 		await targetProject.save();
@@ -308,12 +318,12 @@ const updateProject = async (req, res) => {
 	}
 };
 
-// 5. Delete project (HR/Admin only)
+// 5. Delete project (Manager/Admin only)
 // @desc	Delete project (Soft Delete).
 // @route	DELETE /api/projects/:id
-// @access	Private/ HR
+// @access	Private/ Manager
 // @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
+// Authorization: Bearer Manager_TOKEN_HERE
 // Content-Type: application/json
 const deleteProject = async (req, res) => {
 	try {
@@ -343,4 +353,425 @@ const deleteProject = async (req, res) => {
 	}
 };
 
-module.exports = { createProject, getAllProjects, getProjectById, updateProject, deleteProject };
+//*======================== [TASKS] ======================
+
+// 1. Create new task (Manager only)
+// @desc	create a new task (Manager only)
+// @route	POST /api/projects/:id/
+// @access	Private/ Manager
+// @Headers: 
+// Authorization: Bearer Manager_TOKEN_HERE
+// Content-Type: application/json
+const createTask = async (req, res) => {
+	try {
+		const { projectId } = req.params;
+
+		const project = await Project.findOne({
+			_id: projectId,
+			isDeleted: false,
+		});
+
+		if (!project) {
+			return res.status(404).json({
+				success: false,
+				message: "Project Not Found"
+			});
+		};
+
+		const taskBody = req.body;
+
+		if (taskBody.title) {
+			let {
+				title,
+				description,
+				estimatedHours,
+				priority,
+				startDate,
+				dueDate,
+			} = taskBody;
+
+			// Sanitize Input
+			if (title) title = sanitizeText(title);
+			if (description) description = sanitizeText(description);
+
+			// Validate Input
+			if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
+				return res.status(400).json({
+					success: false,
+					message: "Invalid priority value. Must be one of: low, medium, high, urgent",
+				})
+			}
+			if (estimatedHours && (isNaN(estimatedHours) || estimatedHours < 0)) {
+				return res.status(400).json({
+					success: false,
+					message: "Estimated hours must be a positive number"
+				});
+			}
+
+			// Date validation
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+
+			// Check startDate is not in the past (can be today or future)
+			if (startDate) {
+				const start = new Date(startDate);
+				start.setHours(0, 0, 0, 0);
+
+				if (start < today) {
+					return res.status(400).json({
+						success: false,
+						message: "Start date cannot be in the past"
+					});
+				}
+			}
+
+			// Check dueDate is not in the past
+			if (dueDate) {
+				const end = new Date(dueDate);
+				end.setHours(0, 0, 0, 0);
+
+				if (end < today) {
+					return res.status(400).json({
+						success: false,
+						message: "End date cannot be in the past"
+					});
+				}
+			}
+
+			// Check dueDate is after startDate
+			if (startDate && dueDate) {
+				const start = new Date(startDate);
+				const end = new Date(dueDate);
+				start.setHours(0, 0, 0, 0);
+				end.setHours(0, 0, 0, 0);
+
+				if (end < start) {
+					return res.status(400).json({
+						success: false,
+						message: "End date cannot be before start date"
+					});
+				}
+			}
+
+			const task = await Task.create({
+				title,
+				description,
+				projectId,
+				estimatedHours,
+				priority,
+				startDate,
+				dueDate,
+			});
+
+			return res.status(201).json({
+				success: true,
+				message: "Task Created Successfully!",
+				task: {
+					_id: task._id,
+					title: task.title,
+					description: task.description,
+					projectId: task.projectId,
+					estimatedHours: task.estimatedHours,
+					priority: task.priority,
+					status: task.status,
+					startDate: task.startDate,
+					dueDate: task.dueDate,
+				}
+			});
+		}
+		else {
+			return res.status(400).json({
+				success: false,
+				message: "Error: Missing information please provide all fields"
+			});
+		};
+
+	} catch (err) {
+		catchError(err, res);
+	};
+};
+
+// 2. Get all tasks (Manager/Admin only)
+// @desc	Get all tasks
+// @route	GET /api/projects/:id/tasks
+// @access	Private/ Manager
+// @Headers: 
+// Authorization: Bearer Manager_TOKEN_HERE
+// Content-Type: application/json
+const getAllTasks = async (req, res) => {
+	try {
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = (page - 1) * limit;
+
+		const { projectId } = req.params;
+
+		const project = await Project.findOne({
+			_id: projectId,
+			isDeleted: false,
+		});
+
+		if (!project) {
+			return res.status(404).json({
+				success: false,
+				message: "Project Not Found"
+			});
+		}
+
+		const tasks = await Task.find({
+			projectId: projectId,
+			isDeleted: false
+		})
+			.populate({
+				path: 'projectId',
+				select: 'projectName teamId',
+				populate: {
+					path: 'teamId',
+					select: 'name managerId',
+				}
+			})
+			.populate('assignedTo', 'fullName email')
+			.skip(skip)
+			.limit(limit);
+
+		const totalTasks = await Task.countDocuments({
+			projectId: projectId,
+			isDeleted: false
+		});
+
+		const totalPages = Math.ceil(totalTasks / limit);
+
+		if (tasks.length == 0)
+			return res.status(200).json({
+				success: true,
+				message: "No tasks found",
+				tasks: [],
+				pagination: {
+					currentPage: page,
+					totalPages: 0,
+					totalTasks: 0,
+					itemsPerPage: limit,
+					hasNextPage: false,
+					hasPrevPage: false,
+				}
+			});
+
+		return res.status(200).json({
+			success: true,
+			message: "Tasks retrieved successfully",
+			tasks: tasks,
+			pagination: {
+				currentPage: page,
+				totalPages: totalPages,
+				totalTasks: totalTasks,
+				itemsPerPage: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1,
+			}
+		});
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+// 3. Get single task by ID (Manager/Admin only)
+// @desc	Get single task
+// @route	GET /api/projects/:projectId/tasks/:taskId
+// @access	Private/ Manager
+// @Headers: 
+// Authorization: Bearer Manager_TOKEN_HERE
+// Content-Type: application/json
+const getTaskById = async (req, res) => {
+	try {
+		const { projectId, taskId } = req.params;
+
+		const project = await Project.findOne({
+			_id: projectId,
+			isDeleted: false,
+		});
+
+		if (!project)
+			return res.status(404).json({
+				success: false,
+				message: "Project Not Found"
+			});
+
+		const task = await Task.findById(taskId)
+			.populate('projectId', 'projectName _id')
+
+		if (!task || task.isDeleted)
+			return res.status(404).json({
+				success: false,
+				message: `Task Not Found`,
+				task: null,
+			});
+
+		return res.status(200).json({
+			success: true,
+			message: "Task Found",
+			task: task,
+		})
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+const updateTask = async (req, res) => {
+	try {
+		const { projectId, taskId } = req.params;
+
+		const project = await Project.findById(projectId);
+
+		if (!project || project.isDeleted) {
+			return res.status(404).json({
+				success: false,
+				message: "Project Not Found",
+			});
+		}
+		const targetTask = await Task.findById(taskId);
+
+		if (!targetTask || targetTask.isDeleted) {
+			return res.status(404).json({
+				success: false,
+				message: "Task Not Found",
+			});
+		}
+
+		let {
+			title,
+			description,
+			estimatedHours,
+			priority,
+			status,
+			startDate,
+			dueDate,
+		} = req.body;
+
+		// Sanitize
+		if (title) title = sanitizeText(title);
+		if (description) description = sanitizeText(description);
+		// Validate Input
+		if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid priority value. Must be one of: low, medium, high, urgent",
+			})
+		}
+		if (status && !["pending", "in-progress", "done"].includes(status)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid status value. Must be one of: pending, in-progress, done",
+			})
+		}
+		if (estimatedHours && (isNaN(estimatedHours) || estimatedHours < 0)) {
+			return res.status(400).json({
+				success: false,
+				message: "Estimated hours must be a positive number"
+			});
+		}
+
+		// Date validations (same as create)
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		if (startDate) {
+			const start = new Date(startDate);
+			start.setHours(0, 0, 0, 0);
+			if (start < today) {
+				return res.status(400).json({
+					success: false,
+					message: "Start date cannot be in the past"
+				});
+			}
+		}
+
+		if (dueDate) {
+			const end = new Date(dueDate);
+			end.setHours(0, 0, 0, 0);
+			if (end < today) {
+				return res.status(400).json({
+					success: false,
+					message: "End date cannot be in the past"
+				});
+			}
+		}
+
+		if (startDate && dueDate) {
+			const start = new Date(startDate);
+			const end = new Date(dueDate);
+			start.setHours(0, 0, 0, 0);
+			end.setHours(0, 0, 0, 0);
+			if (end < start) {
+				return res.status(400).json({
+					success: false,
+					message: "End date cannot be before start date"
+				});
+			}
+		}
+
+		// Update fields
+		if (title) targetTask.title = title;
+		if (description) targetTask.description = description;
+		if (estimatedHours) targetTask.estimatedHours = estimatedHours;
+		if (priority) targetTask.priority = priority;
+		if (status) targetTask.status = status;
+		if (startDate) targetTask.startDate = startDate;
+		if (dueDate) targetTask.dueDate = dueDate;
+
+		await targetTask.save();
+
+		return res.status(200).json({
+			success: true,
+			message: `${targetTask.title} updated successfully`,
+			task: targetTask,
+		});
+
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+// 5. Delete task (Manager/Admin only)
+// @desc	Delete task (Soft Delete).
+// @route	DELETE /api/projects/:projectId/tasks/:id
+// @access	Private/ Manager
+// @Headers: 
+// Authorization: Bearer Manager_TOKEN_HERE
+// Content-Type: application/json
+const deleteTask = async (req, res) => {
+	try {
+		const { projectId, taskId } = req.params;
+
+		const project = await Project.findById(projectId);
+		const task = await Task.findById(taskId);
+
+		if (!project || project.isDeleted)
+			return res.status(404).json({
+				success: false,
+				message: "Project not found or already deleted"
+			});
+
+		if (!task || task.isDeleted)
+			return res.status(404).json({
+				success: false,
+				message: "Task not found or already deleted"
+			});
+
+		task.isDeleted = true;
+		await task.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "Task Successfully Deleted",
+			task: {
+				_id: task._id,
+				title: task.title,
+			}
+		});
+
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+module.exports = { createProject, getAllProjects, getProjectById, updateProject, deleteProject, createTask, getAllTasks, getTaskById, updateTask, deleteTask };
