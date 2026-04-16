@@ -1,6 +1,5 @@
 const mongoose = require ('mongoose');
-
-exports.taskSchema = new mongoose.Schema (
+const taskSchema = new mongoose.Schema (
 	{
 		title: {
 			type: String,
@@ -40,18 +39,25 @@ exports.taskSchema = new mongoose.Schema (
 		assignedTo: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
-			required: true,
+			default: null,
 		},
+		isDeleted: {
+			type: Boolean,
+			default: false,
+		}
 	},
 	
 	{timestamps: true}
 );
 
-// exports.taskSchema.virtual ("timeLogs",{
+//taskSchema.virtual ("timeLogs",{
 // 	ref: 'TimeLog',
 // 	localField: '_id',
 // 	foreignField: 'taskId'
 // });
 
-// exports.taskSchema.set ("toObject", { virtuals: true });
-// exports.taskSchema.set ("toJSON", { virtuals: true });
+//taskSchema.set ("toObject", { virtuals: true });
+//taskSchema.set ("toJSON", { virtuals: true });
+
+const Task = mongoose.model ("Task", taskSchema);
+module.exports = Task;
