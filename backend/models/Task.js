@@ -1,5 +1,5 @@
-const mongoose = require ('mongoose');
-const taskSchema = new mongoose.Schema (
+const mongoose = require('mongoose');
+const taskSchema = new mongoose.Schema(
 	{
 		title: {
 			type: String,
@@ -13,6 +13,16 @@ const taskSchema = new mongoose.Schema (
 		description: {
 			type: String,
 			default: "",
+		},
+		checklist: {
+			type: [{
+				text: String,
+				completed: {
+					type: Boolean,
+					default: false,
+				}
+			}],
+			default: [],
 		},
 		estimatedHours: {
 			type: Number,
@@ -46,8 +56,8 @@ const taskSchema = new mongoose.Schema (
 			default: false,
 		}
 	},
-	
-	{timestamps: true}
+
+	{ timestamps: true }
 );
 
 //taskSchema.virtual ("timeLogs",{
@@ -59,5 +69,5 @@ const taskSchema = new mongoose.Schema (
 //taskSchema.set ("toObject", { virtuals: true });
 //taskSchema.set ("toJSON", { virtuals: true });
 
-const Task = mongoose.model ("Task", taskSchema);
+const Task = mongoose.model("Task", taskSchema);
 module.exports = Task;

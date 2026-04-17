@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Team = require('../models/Team');
+const User = require('../models/User')
 const catchError = require('../utils/catchError');
 const { sanitizeText } = require('../utils/validation');
 
@@ -378,21 +379,56 @@ const createTask = async (req, res) => {
 			});
 		};
 
+
 		const taskBody = req.body;
 
-		if (taskBody.title) {
+		if (taskBody.title && taskBody.assignedTo) {
 			let {
 				title,
 				description,
+				assignedTo,
 				estimatedHours,
 				priority,
 				startDate,
 				dueDate,
+				checklist,
 			} = taskBody;
+
+			const userAssigned = await User.findById(assignedTo).select("-password");
+			if (!userAssigned) {
+				return res.status(404).json({
+					success: false,
+					message: "User Not Found"
+				})
+			}
+			const projectTeam = await Team.findOne({
+				_id: project.teamId,
+				isDeleted: false,
+			}
+			)
+
+			// Go to project team and extract members to chose from
+			const isUserInTeam = projectTeam.members.some(
+				// without toString the ids will not be equal
+				member => member.toString() === userAssigned._id.toString()
+			) || projectTeam.managerId.toString() === userAssigned._id.toString()
+
+			if (!isUserInTeam) {
+				return res.status(400).json({
+					success: false,
+					message: "User is not a member of the project's team"
+				});
+			}
 
 			// Sanitize Input
 			if (title) title = sanitizeText(title);
 			if (description) description = sanitizeText(description);
+			if (checklist) {
+				checklist = checklist.map (item => ({
+					text: sanitizeText (item.text),
+					completed: item.completed,
+				}))
+			};
 
 			// Validate Input
 			if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
@@ -456,11 +492,13 @@ const createTask = async (req, res) => {
 			const task = await Task.create({
 				title,
 				description,
+				assignedTo,
 				projectId,
 				estimatedHours,
 				priority,
 				startDate,
 				dueDate,
+				checklist,
 			});
 
 			return res.status(201).json({
@@ -470,13 +508,18 @@ const createTask = async (req, res) => {
 					_id: task._id,
 					title: task.title,
 					description: task.description,
+					assignedTo: {
+						_id: userAssigned._id,
+						fullName: userAssigned.fullName,
+					},
 					projectId: task.projectId,
 					estimatedHours: task.estimatedHours,
 					priority: task.priority,
 					status: task.status,
+					checklist: task.checklist,
 					startDate: task.startDate,
 					dueDate: task.dueDate,
-				}
+				},
 			});
 		}
 		else {
@@ -598,6 +641,7 @@ const getTaskById = async (req, res) => {
 
 		const task = await Task.findById(taskId)
 			.populate('projectId', 'projectName _id')
+			.populate('assignedTo', 'fullName _id')
 
 		if (!task || task.isDeleted)
 			return res.status(404).json({
@@ -640,16 +684,26 @@ const updateTask = async (req, res) => {
 		let {
 			title,
 			description,
+			assignedTo,
 			estimatedHours,
 			priority,
 			status,
 			startDate,
 			dueDate,
+			checklist,
 		} = req.body;
+
 
 		// Sanitize
 		if (title) title = sanitizeText(title);
 		if (description) description = sanitizeText(description);
+		if (checklist) {
+			checklist = checklist.map (item => ({
+				text: sanitizeText (item.text),
+				completed: item.completed,
+			}))
+		}
+
 		// Validate Input
 		if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
 			return res.status(400).json({
@@ -657,18 +711,50 @@ const updateTask = async (req, res) => {
 				message: "Invalid priority value. Must be one of: low, medium, high, urgent",
 			})
 		}
+
 		if (status && !["pending", "in-progress", "done"].includes(status)) {
 			return res.status(400).json({
 				success: false,
 				message: "Invalid status value. Must be one of: pending, in-progress, done",
 			})
 		}
+
 		if (estimatedHours && (isNaN(estimatedHours) || estimatedHours < 0)) {
 			return res.status(400).json({
 				success: false,
 				message: "Estimated hours must be a positive number"
 			});
 		}
+
+		if (assignedTo) {
+			const userAssigned = await User.findById(assignedTo);
+			if (!userAssigned) {
+				return res.status(404).json({
+					success: false,
+					message: "User Not Found",
+				})
+			}
+			const projectTeam = await Team.findOne({
+				_id: project.teamId,
+				isDeleted: false,
+			}
+			)
+
+			// Go to project team and extract members to chose from
+			const isUserInTeam = projectTeam.members.some(
+				// without toString the ids will not be equal
+				member => member.toString() === userAssigned._id.toString()
+			) || projectTeam.managerId.toString() === userAssigned._id.toString()
+
+			if (!isUserInTeam) {
+				return res.status(400).json({
+					success: false,
+					message: "User is not a member of the project's team"
+				});
+			}
+
+		}
+
 
 		// Date validations (same as create)
 		const today = new Date();
@@ -717,6 +803,8 @@ const updateTask = async (req, res) => {
 		if (status) targetTask.status = status;
 		if (startDate) targetTask.startDate = startDate;
 		if (dueDate) targetTask.dueDate = dueDate;
+		if (assignedTo) targetTask.assignedTo = assignedTo;
+		if (checklist) targetTask.checklist = checklist;
 
 		await targetTask.save();
 
