@@ -1,5 +1,5 @@
 import React from 'react'
-import Dashboard from '../pages/Hr/Dashboard';
+import Dashboard from '../pages/Hr/HrDashboard';
 import ManageUsers from '../pages/Hr/ManageUsers';
 import Teams from '../pages/Shared/Teams';
 import { Routes, Route } from 'react-router-dom'

@@ -321,7 +321,7 @@ const forgotPassword = async (req, res) => {
 		await user.save();
 
 		// Build a URL that includes the token
-		const resetUrl = `http://localhost:8000/api/auth/reset-password/${resetToken}`;
+		const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
 		// Log the URL to console
 		console.log("\n" + "=".repeat(60));
