@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance"
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/UserContext";
+import toast from "react-hot-toast";
 
 const Login = () => {
 	const [email, setEmail] = useState("");
@@ -60,6 +61,8 @@ const Login = () => {
 				//! DEBUG: token to console
 				// console.log('token => ' + token + 'localStorage token=> ' + localStorage.getItem('token'));
 
+				toast.success(`Welcome back, ${user.fullName}!`);
+
 				// Redirect based on role
 				if (role === 'hr') {
 					navigate('/hr/dashboard')
@@ -74,7 +77,8 @@ const Login = () => {
 			if (error.response && error.response.data.message) {
 				setError(error.response && error.response.data.message);
 			} else {
-				setError("Something went wrong, Please try again.")
+				setError("Something went wrong, Please try again.");
+				toast.error("Something went wrong, Please try again.");
 			}
 		}
 	}
