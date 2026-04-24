@@ -25,6 +25,7 @@ import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import { UserContext } from './context/UserContext';
 import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
 import UserProvider from './context/UserProvider';
+import { Toaster } from 'react-hot-toast';
 
 // import HrRoutes from './routes/HrRoutes';
 // import ManagerRoutes from './routes/ManagerRoutes';
@@ -33,6 +34,7 @@ import UserProvider from './context/UserProvider';
 const App = () => {
 	return (
 		<>
+		<Toaster position="top-center"/>
 			<UserProvider>
 				<Router>
 					{/* Route Can not be outside Routes. */}

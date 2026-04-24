@@ -5,6 +5,7 @@ import Input from '../../components/inputs/Input';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 const ForgotPassword = () => {
 	const [email, setEmail] = useState("");
@@ -15,24 +16,33 @@ const ForgotPassword = () => {
 	const handleForgotPassword = async (e) => {
 		e.preventDefault();
 		setError(null);
-		
+
 		if (!email) {
 			setError("Email address cannot be empty.");
 			return;
 		}
-		
+
 		setIsLoading(true);
 
 		try {
 			await axiosInstance.post(API_PATHS.AUTH.FORGOT_PASSWORD, {
 				email
 			});
-			
+
 			setSuccess(true);
-			
+			if (success)
+			{
+				toast.success('Reset link sent! Please check your email.', {
+					duration: 5000,
+					icon: '📧',
+				});
+
+			}
+
 		} catch (error) {
 			if (error.response?.data?.message) {
 				setError(error.response.data.message);
+				toast.error(error.response.data.message);
 			} else {
 				setError("Something went wrong. Please try again.");
 			}
@@ -50,7 +60,7 @@ const ForgotPassword = () => {
 				<form onSubmit={handleForgotPassword} className="mt-6">
 					<Input
 						value={email}
-						onChange={({target}) => setEmail(target.value)} 
+						onChange={({ target }) => setEmail(target.value)}
 						label="Email Address"
 						placeholder="john@example.com"
 						type="email"
@@ -59,21 +69,16 @@ const ForgotPassword = () => {
 					{error && (
 						<p className="text-red-500 text-sm mt-2">{error}</p>
 					)}
-					
-					{success && (
-						<div className="bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-md mt-4">
-							Reset link sent! Please check your email.
-						</div>
-					)}
 
-					<button 
-						type="submit" 
+					<button
+						type="submit"
 						className="btn-primary w-full mt-6"
 						disabled={isLoading}
 					>
+						{/* conditional rendering */}
 						{isLoading ? "SENDING..." : "SEND RESET LINK"}
 					</button>
-					
+
 					<p className="text-center text-sm text-slate-600 mt-6">
 						Remember your password?{' '}
 						<Link className="text-primary font-medium hover:underline" to="/login">

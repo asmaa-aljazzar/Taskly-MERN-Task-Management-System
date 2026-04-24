@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Input from '../../components/inputs/Input';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import toast from 'react-hot-toast';
 
 const ResetPassword = () => {
 	const [password, setPassword] = useState("");
@@ -13,9 +14,9 @@ const ResetPassword = () => {
 	const [success, setSuccess] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [showTips, setShowTips] = useState(false);
-	
-	const { token } = useParams();
-	const navigate = useNavigate();
+
+	const { token } = useParams(); // extract token from URL
+	const navigate = useNavigate(); // for redirecting after success
 
 	// Check if token exists
 	if (!token) {
@@ -39,43 +40,49 @@ const ResetPassword = () => {
 		{ label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
 		{ label: "Contains lowercase letter", met: /[a-z]/.test(password) },
 		{ label: "Contains a number", met: /[0-9]/.test(password) },
-			{ label: "Contains a special character (@$!%*?&.#)", met: /[@$!%*?&.#]/.test(password) },
+		{ label: "Contains a special character (@$!%*?&.#)", met: /[@$!%*?&.#]/.test(password) },
 	];
 
 	const handleResetPassword = async (e) => {
 		e.preventDefault();
-		setError(null);
-		
+		setError(null); // Clear previous errors
+
 		if (!password) {
 			setError("Password cannot be empty");
 			return;
 		}
-		
+
 		if (password !== confirmPassword) {
 			setError("Passwords do not match");
 			return;
 		}
-		
+
 		setIsLoading(true);
 
 		try {
 			const resetUrl = API_PATHS.AUTH.RESET_PASSWORD(token);
 			console.log('Reset URL:', resetUrl);
-			
+
 			const response = await axiosInstance.put(resetUrl, {
 				password
 			});
-			
+
 			console.log('Reset response:', response.data);
 			setSuccess(true);
-			
+			toast.success('Password reset successful! Redirecting to login...', {
+				duration: 4000,
+				icon: '🔐',
+			});
+
 			// Redirect to login after 3 seconds
 			setTimeout(() => {
 				navigate('/login');
 			}, 3000);
-			
+
 		} catch (error) {
-			console.error('Reset error:', error.response?.data || error.message);
+			const errorMessage = error.response?.data?.message || "Something went wrong. Please try again.";
+			toast.error(errorMessage);
+
 			if (error.response?.data?.message) {
 				setError(error.response.data.message);
 			} else {
@@ -137,8 +144,8 @@ const ResetPassword = () => {
 							</div>
 						)}
 
-						<button 
-							type="submit" 
+						<button
+							type="submit"
 							className="btn-primary w-full mt-6"
 							disabled={isLoading}
 						>
