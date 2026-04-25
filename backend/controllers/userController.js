@@ -9,22 +9,19 @@ const {
 	sanitizePhone
 } = require('../utils/validation');
 const { verify } = require('jsonwebtoken');
-const { isValidElement } = require('react');
+const Team = require('../models/Team');
+const Project = require('../models/Project');
+const Task = require('../models/Task');
 
 // 1. Create new user (HR only)
 // @desc	create a new user (HR only)
 // @route	POST /api/users
 // @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const createUser = async (req, res) => {
 	try {
-		// 1. Extract data from req.body
 		const userBody = req.body;
 
 		if (userBody.fullName && userBody.email && userBody.password && userBody.hireDate) {
-			//? Destructuring = extracting values into variables with the same name
 			let {
 				fullName,
 				email,
@@ -34,40 +31,23 @@ const createUser = async (req, res) => {
 				role,
 				hireDate } = userBody;
 
-			// Sanitize inputs
 			email = sanitizeEmail(email);
 			fullName = sanitizeText(fullName);
 			phoneNumber = sanitizePhone(phoneNumber);
 
-			// Validate
 			if (email && !validateEmail(email)) {
 				return res.status(400).json({
 					message: "Invalid email format"
 				});
 			}
 
-			// if (!validatePassword(password)) {
-			// 	return res.status(400).json({
-			// 		message: "Password must be at least 8 characters with uppercase, lowercase, number, and special character"
-			// 	});
-			// }
-
-			//! Check if user already exist:
-			//* Avoid unnecessary hash.
-			//* Avoid race conditions.
-			//* Cleaner error message.
 			const userExist = await User.findOne({ email });
 			if (userExist)
 				return res.status(409).json({ message: "Email is already in use" });
 
-			// Hash password
-			//? bcrypt.genSalt:
-			//* adds random data to the password before hashing, making it harder to crack with precomputed attacks.
 			const salt = await bcrypt.genSalt(10);
 			const hashedPassword = await bcrypt.hash(password, salt);
 
-			// Create user in database
-			// Set the same data to a new user;
 			const user = await User.create({
 				fullName,
 				email,
@@ -78,10 +58,6 @@ const createUser = async (req, res) => {
 				hireDate
 			});
 
-			// Send back success response.
-			//? With user data
-			//* Saves frontend from making an extra API call to fetch the new user.
-			//* Frontend immediately has user ID, role, and other info to update UI.
 			return res.status(201).json({
 				message: "User Created Successfully!",
 				user: {
@@ -96,23 +72,15 @@ const createUser = async (req, res) => {
 			});
 		}
 		else {
-			//! Always return when error.
 			return res.status(400).json({ message: "Error: Missing information please provide all fields" });
 		};
 
 	} catch (err) {
-		// res.status(500).json({ message: "Server error", error: err.message });
 		catchError(err, res);
 	};
 }
 
 // 2. Get all users (HR/Admin only)
-// @desc	Get all users
-// @route	GET /api/users
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const getAllUsers = async (req, res) => {
 	try {
 		if (!req.user) {
@@ -123,34 +91,19 @@ const getAllUsers = async (req, res) => {
 		}
 		const hr = req.user;
 
-		// Use Pagination
-		//? Request: GET /api/users?page=2&limit=10
-		const page = parseInt(req.query.page) || 1; // Page number.
-		const limit = parseInt(req.query.limit) || 10; // Users per page.
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = (page - 1) * limit;
 
-		// Skip users until you are in the requested page
-		const skip = (page - 1) * limit; // I don't want this users in currect page.
-
-		// get users from database.
-		const users = await User.find({isDeleted: false})
+		const users = await User.find({ isDeleted: false })
 			.skip(skip)
 			.limit(limit);
 
-		// ? How .filter() works:
-		//* It loops through each item in the array
-		//* Returns true to keep the item, false to remove it
-		//* Creates a NEW array with only kept items
-
 		const otherUsers = users.filter(user =>
-			//! Without toString() - problem!
-			// MongoDB ObjectId comparison fails even with same value
-			(user._id.toString() !== req.user._id.toString())
-			// req.user = WHO is making the request (from token, NOT from body!)
+			user._id.toString() !== req.user._id.toString()
 		);
 
-		const totalUsers = await User.countDocuments({isDeleted: false});
-
-		//? Math.ceil (): rounds a number UP to the nearest integer.
+		const totalUsers = await User.countDocuments({ isDeleted: false });
 		const totalPages = Math.ceil(totalUsers / limit);
 
 		if (otherUsers.length == 0)
@@ -160,7 +113,6 @@ const getAllUsers = async (req, res) => {
 				users: [hr],
 			});
 
-		// return users.
 		return res.status(200).json({
 			success: true,
 			message: "Users retrieved successfully",
@@ -179,19 +131,11 @@ const getAllUsers = async (req, res) => {
 	}
 };
 
-// 3. Get single user by ID (HR/Admin only)
-// @desc	Get single user
-// @route	GET /api/users/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
+// 3. Get single user by ID
 const getUserById = async (req, res) => {
 	try {
-		// userId form url
 		const _id = req.params.id;
 
-		// find the user
 		const user = await User.findById(_id).select("-password");
 		if (!user || user.isDeleted)
 			return res.status(404).json({
@@ -211,18 +155,10 @@ const getUserById = async (req, res) => {
 };
 
 // 4. Update user (HR/Admin only)
-// @desc	Update single user data.
-// @route	PUT /api/users/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const updateUser = async (req, res) => {
 	try {
-		// Get user id from URL params.
 		const _id = req.params.id;
 
-		// find the user by id.
 		const targetUser = await User.findById(_id);
 
 		if (!targetUser || targetUser.isDeleted)
@@ -231,12 +167,6 @@ const updateUser = async (req, res) => {
 				message: "User Not Found",
 			})
 
-		// Get user business fields data req body.
-		//	fullname
-		//	email
-		//	phoneNumber
-		//	role
-		//	hireDate
 		let {
 			fullName,
 			email,
@@ -244,15 +174,12 @@ const updateUser = async (req, res) => {
 			role,
 		} = req.body;
 
-		// sanitize fields
 		if (fullName) fullName = sanitizeText(fullName);
 		if (email) email = sanitizeEmail(email);
 		if (phoneNumber) phoneNumber = sanitizePhone(phoneNumber);
 		if (role) role = sanitizeText(role);
 
 		let hireDate;
-
-		// convert STRING to DATE object
 		if (req.body.hireDate) hireDate = new Date(req.body.hireDate);
 
 		if (hireDate && hireDate > Date.now())
@@ -261,7 +188,6 @@ const updateUser = async (req, res) => {
 				message: "Hire date can't be in future!",
 			});
 
-		// Validate Email
 		if (email && !validateEmail(email))
 			return res.status(400).json({
 				success: false,
@@ -270,7 +196,7 @@ const updateUser = async (req, res) => {
 
 		const isExist = await User.findOne({
 			email,
-			_id: { $ne: _id }, // the email exist but not the current user
+			_id: { $ne: _id },
 		});
 
 		if (email && isExist)
@@ -292,11 +218,6 @@ const updateUser = async (req, res) => {
 				message: "Cannot change HR user's role"
 			});
 
-
-		// update User schema
-
-		// create a new object to carry user data.
-
 		if (fullName) targetUser.fullName = fullName;
 		if (email) targetUser.email = email;
 		if (phoneNumber) targetUser.phoneNumber = phoneNumber;
@@ -305,7 +226,6 @@ const updateUser = async (req, res) => {
 		await targetUser.save();
 
 		const updatedUser = await User.findById(_id).select("-password");
-
 
 		return res.status(200).json({
 			success: true,
@@ -319,108 +239,143 @@ const updateUser = async (req, res) => {
 }
 
 // 5. Delete user (HR/Admin only)
-// @desc	Delete user (Soft Delete).
-// @route	DELETE /api/users/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
+// @desc	Soft-delete a user with full cascade:
+//			- Remove them from any team's members array
+//			- If they were a manager: soft-delete their teams → soft-delete those teams'
+//			  projects → soft-delete those projects' tasks
 const deleteUser = async (req, res) => {
 	try {
 		const _id = req.params.id;
 		const user = await User.findById(_id).select("-password");
+
 		if (!user || user.isDeleted)
-			return res.status(404).json({ success: false, message: "User not found or already deleted" });
-		if (user && !user.isDeleted) {
-			user.isDeleted = true;
-			await user.save();
-			return res.status(200).json({
-				success: true,
-				message: "User Successfully Deleted",
-				user: {
-					_id: user._id,
-					fullName: user.fullName,
-					isDeleted: user.isDeleted
-				}
+			return res.status(404).json({
+				success: false,
+				message: "User not found or already deleted"
 			});
+
+		// 1. Remove user from any team's members list
+		await Team.updateMany(
+			{ members: _id, isDeleted: false },
+			{ $pull: { members: _id } }
+		);
+
+		// 2. If the deleted user was a manager, cascade delete their teams → projects → tasks
+		if (user.role === 'manager') {
+			// Find all active teams managed by this user
+			const managedTeams = await Team.find({
+				managerId: _id,
+				isDeleted: false,
+			});
+
+			for (const team of managedTeams) {
+				// Find all active projects belonging to this team
+				const teamProjects = await Project.find({
+					teamId: team._id,
+					isDeleted: false,
+				});
+
+				for (const project of teamProjects) {
+					// Soft-delete all tasks inside each project
+					await Task.updateMany(
+						{ projectId: project._id, isDeleted: false },
+						{ $set: { isDeleted: true } }
+					);
+
+					// Soft-delete the project
+					project.isDeleted = true;
+					await project.save();
+				}
+
+				// Soft-delete the team
+				team.isDeleted = true;
+				await team.save();
+			}
 		}
+
+		// 3. Soft-delete the user
+		user.isDeleted = true;
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "User Successfully Deleted",
+			user: {
+				_id: user._id,
+				fullName: user.fullName,
+				isDeleted: user.isDeleted
+			}
+		});
+
 	} catch (err) {
 		catchError(err, res);
 	}
 }
 
-// 2. Get users by role (HR/Admin only)
-// @desc	Get users with same role
-// @route	GET /api/users/role/:role
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
+// Get users by role
 const getUsersByRole = async (req, res) => {
-    try {
-        const { role } = req.params;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
+	try {
+		const { role } = req.params;
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = (page - 1) * limit;
 
-        // Validate role
-        const validRoles = ['hr', 'manager', 'employee'];
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid role. Must be: ${validRoles.join(', ')}`
-            });
-        }
+		const validRoles = ['hr', 'manager', 'employee'];
+		if (!validRoles.includes(role)) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid role. Must be: ${validRoles.join(', ')}`
+			});
+		}
 
-        // Find users by role (active only)
-        const users = await User.find({ 
-            role, 
-            isDeleted: false 
-        })
-        .select('-password')
-        .skip(skip)
-        .limit(limit)
-        .sort ({ createdAt: -1 }); // Sort newest first | -1 = descending, 1 = ascending
+		const users = await User.find({
+			role,
+			isDeleted: false
+		})
+			.select('-password')
+			.skip(skip)
+			.limit(limit)
+			.sort({ createdAt: -1 });
 
-        const totalUsers = await User.countDocuments({ 
-            role, 
-            isDeleted: false 
-        });
-        const totalPages = Math.ceil(totalUsers / limit);
+		const totalUsers = await User.countDocuments({
+			role,
+			isDeleted: false
+		});
+		const totalPages = Math.ceil(totalUsers / limit);
 
-        if (users.length === 0) {
-            return res.status(200).json({
-                success: true,
-                message: `No ${role} users found`,
-                users: [],
-                pagination: {
-                    currentPage: page,
-                    totalPages: 0,
-                    totalUsers: 0,
-                    itemsPerPage: limit,
-                    hasNextPage: false,
-                    hasPrevPage: false
-                }
-            });
-        }
+		if (users.length === 0) {
+			return res.status(200).json({
+				success: true,
+				message: `No ${role} users found`,
+				users: [],
+				pagination: {
+					currentPage: page,
+					totalPages: 0,
+					totalUsers: 0,
+					itemsPerPage: limit,
+					hasNextPage: false,
+					hasPrevPage: false
+				}
+			});
+		}
 
-        return res.status(200).json({
-            success: true,
-            message: `${users.length} ${role}(s) found`,
-            users,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalUsers,
-                itemsPerPage: limit,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1
-            }
-        });
+		return res.status(200).json({
+			success: true,
+			message: `${users.length} ${role}(s) found`,
+			users,
+			pagination: {
+				currentPage: page,
+				totalPages,
+				totalUsers,
+				itemsPerPage: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1
+			}
+		});
 
-    } catch (err) {
-        catchError(err, res);
-    }
+	} catch (err) {
+		catchError(err, res);
+	}
 };
 
 module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, getUsersByRole };

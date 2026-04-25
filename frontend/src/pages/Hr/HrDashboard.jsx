@@ -9,13 +9,11 @@ import {
 	PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts';
 
-// ─── Small reusable pieces ─────────────────────────────────────────────────────
-
 const StatusBadge = ({ status }) => {
 	const styles = {
-		done:         'bg-emerald-100 text-emerald-700',
+		done:          'bg-emerald-100 text-emerald-700',
 		'in-progress': 'bg-amber-100   text-amber-700',
-		pending:      'bg-rose-100    text-rose-700',
+		pending:       'bg-rose-100    text-rose-700',
 	};
 	const labels = { done: 'Done', 'in-progress': 'In Progress', pending: 'Pending' };
 	return (
@@ -96,9 +94,8 @@ const LoadingSpinner = () => (
 	</DashboardLayout>
 );
 
-// ─── Main component ────────────────────────────────────────────────────────────
-
 const HrDashboard = () => {
+	// FIX: was user?.name — backend returns fullName
 	const { user } = useUserAuth();
 	const [data, setData] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -133,19 +130,18 @@ const HrDashboard = () => {
 		);
 	}
 
-	const taskTotal = data.tasks?.total || 1; // avoid /0 in progress bars
+	const taskTotal = data.tasks?.total || 1;
 
 	return (
 		<DashboardLayout activeMenuItem="Dashboard">
-			<div className="py-8 px-1 bg-gray-50 min-h-screen space-y-8">
+			<div className="py-8 px-8 bg-gray-50 min-h-screen space-y-8">
 
-				{/* Header */}
 				<div>
 					<h1 className="text-2xl font-bold text-gray-800">HR Dashboard</h1>
-					<p className="text-sm text-gray-500 mt-1">Welcome back, {user?.name}</p>
+					{/* FIX: user?.name → user?.fullName */}
+					<p className="text-sm text-gray-500 mt-1">Welcome back, {user?.fullName}</p>
 				</div>
 
-				{/* Summary Cards */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 					<StatCard
 						label="Total Users"
@@ -211,7 +207,6 @@ const HrDashboard = () => {
 					/>
 				</div>
 
-				{/* Charts Row */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<SectionCard title="User Distribution">
 						<div className="h-64">
@@ -254,13 +249,12 @@ const HrDashboard = () => {
 					</SectionCard>
 				</div>
 
-				{/* Status Row */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<SectionCard title="Task Status">
 						<div className="space-y-4">
-							<ProgressBar label="Pending"     value={data.tasks?.status?.pending    ?? 0} total={taskTotal} color="bg-rose-400" />
-							<ProgressBar label="In Progress" value={data.tasks?.status?.inProgress  ?? 0} total={taskTotal} color="bg-amber-400" />
-							<ProgressBar label="Completed"   value={data.tasks?.status?.completed   ?? 0} total={taskTotal} color="bg-emerald-500" />
+							<ProgressBar label="Pending"     value={data.tasks?.status?.pending   ?? 0} total={taskTotal} color="bg-rose-400" />
+							<ProgressBar label="In Progress" value={data.tasks?.status?.inProgress ?? 0} total={taskTotal} color="bg-amber-400" />
+							<ProgressBar label="Completed"   value={data.tasks?.status?.completed  ?? 0} total={taskTotal} color="bg-emerald-500" />
 						</div>
 					</SectionCard>
 
@@ -280,7 +274,6 @@ const HrDashboard = () => {
 					</SectionCard>
 				</div>
 
-				{/* Employee Workload Table */}
 				<SectionCard title="Employee Workload">
 					<div className="overflow-x-auto">
 						<table className="min-w-full">
@@ -327,7 +320,6 @@ const HrDashboard = () => {
 					</div>
 				</SectionCard>
 
-				{/* Recent Tasks Table */}
 				<SectionCard title="Recent Tasks">
 					<div className="overflow-x-auto">
 						<table className="min-w-full">

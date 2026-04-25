@@ -1,15 +1,11 @@
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Project = require('../models/Project');
+const Task = require('../models/Task');
 const catchError = require('../utils/catchError');
 const { sanitizeText } = require('../utils/validation');
 
 // 1. Create new team (HR only)
-// @desc	create a new team (HR only)
-// @route	POST /api/teams
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const createTeam = async (req, res) => {
 	try {
 		const teamBody = req.body;
@@ -20,13 +16,11 @@ const createTeam = async (req, res) => {
 				managerId,
 				members,
 				description,
-				isDeleted,
 			} = teamBody;
 
 			if (name) name = sanitizeText(name);
 			if (description) description = sanitizeText(description);
 
-			// Validation
 			const manager = await User.findOne({
 				_id: managerId,
 				isDeleted: false
@@ -47,9 +41,8 @@ const createTeam = async (req, res) => {
 
 			let validateMembersIds = [];
 			if (members && members.length > 0) {
-				// Find all users in members array by search in User model. 
 				const validateMembers = await User.find({
-					_id: { $in: members }, // $in: search in array
+					_id: { $in: members },
 					isDeleted: false,
 				});
 
@@ -67,8 +60,6 @@ const createTeam = async (req, res) => {
 						message: "HR users cannot be added as regular team members"
 					});
 				}
-
-				// Transform each item in an array into something new.
 
 				validateMembersIds = validateMembers.map(member => member._id);
 			}
@@ -106,12 +97,6 @@ const createTeam = async (req, res) => {
 };
 
 // 2. Get all teams (HR/Admin only)
-// @desc	Get all teams
-// @route	GET /api/teams
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const getAllTeams = async (req, res) => {
 	try {
 		if (!req.user) {
@@ -167,13 +152,7 @@ const getAllTeams = async (req, res) => {
 	}
 };
 
-// 3. Get single team by ID (HR/Admin only)
-// @desc	Get single team
-// @route	GET /api/teams/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
+// 3. Get single team by ID
 const getTeamById = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -200,12 +179,6 @@ const getTeamById = async (req, res) => {
 };
 
 // 4. Update team (HR/Admin only)
-// @desc	Update single team data.
-// @route	PUT /api/teams/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
 const updateTeam = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -225,18 +198,14 @@ const updateTeam = async (req, res) => {
 			description,
 		} = req.body;
 
-		// Sanitize
 		if (name) name = sanitizeText(name);
 		if (description) description = sanitizeText(description);
 
-		// Validation 
-		// managerId
 		if (managerId) {
-			const manager = await User.findOne(
-				{
-					_id: managerId,
-					isDeleted: false,
-				});
+			const manager = await User.findOne({
+				_id: managerId,
+				isDeleted: false,
+			});
 
 			if (!manager)
 				return res.status(404).json({
@@ -254,11 +223,9 @@ const updateTeam = async (req, res) => {
 			targetTeam.managerId = managerId;
 		}
 
-		// membersIds
 		let validateMembersIds = [];
 		if (members) {
 			if (members.length > 0) {
-
 				const validateMembers = await User.find({
 					_id: { $in: members },
 					isDeleted: false,
@@ -278,12 +245,10 @@ const updateTeam = async (req, res) => {
 					});
 				}
 
-				// Transform each item in an array into something new.
 				validateMembersIds = validateMembers.map(member => member._id);
 			}
 		}
 
-		// Update
 		if (name) targetTeam.name = name;
 		if (managerId) targetTeam.managerId = managerId;
 		if (members) targetTeam.members = validateMembersIds;
@@ -293,7 +258,7 @@ const updateTeam = async (req, res) => {
 
 		return res.status(200).json({
 			success: true,
-			message: `${targetTeam.name} updated successfully`, 
+			message: `${targetTeam.name} updated successfully`,
 			team: targetTeam,
 		});
 
@@ -303,12 +268,9 @@ const updateTeam = async (req, res) => {
 };
 
 // 5. Delete team (HR/Admin only)
-// @desc	Delete team (Soft Delete).
-// @route	DELETE /api/teams/:id
-// @access	Private/ HR
-// @Headers: 
-// Authorization: Bearer HR_TOKEN_HERE
-// Content-Type: application/json
+// @desc	Soft-delete a team with full cascade:
+//			- Soft-delete all projects that belong to this team
+//			- Soft-delete all tasks inside those projects
 const deleteTeam = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -320,6 +282,25 @@ const deleteTeam = async (req, res) => {
 				message: "Team not found or already deleted"
 			});
 
+		// 1. Find all active projects under this team
+		const teamProjects = await Project.find({
+			teamId: _id,
+			isDeleted: false,
+		});
+
+		for (const project of teamProjects) {
+			// 2. Soft-delete all tasks inside each project
+			await Task.updateMany(
+				{ projectId: project._id, isDeleted: false },
+				{ $set: { isDeleted: true } }
+			);
+
+			// 3. Soft-delete the project
+			project.isDeleted = true;
+			await project.save();
+		}
+
+		// 4. Soft-delete the team
 		team.isDeleted = true;
 		await team.save();
 
