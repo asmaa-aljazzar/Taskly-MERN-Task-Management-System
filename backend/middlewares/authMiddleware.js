@@ -67,6 +67,18 @@ const managerOnly = async (req, res, next) => {
 	}
 }
 
+const hrOrManager = async (req, res, next) => {
+	try {
+		if (req.user && (req.user.role == "hr" || req.user.role == "manager")) {
+			next();
+		} else {
+			return res.status(403).json({ message: "Access denied. HR or Manager only." });
+		}
+	} catch (err) {
+		catchError(err, res);
+	}
+}
+
 // Middleware for Employee
 const employeeOnly = async (req, res, next) => {
 	try {
@@ -81,4 +93,4 @@ const employeeOnly = async (req, res, next) => {
 	}
 }
 //?  Module is a file that exports code - it's about organizing your code.
-module.exports = { protect, hrOnly, managerOnly, employeeOnly};
+module.exports = { protect, hrOnly, managerOnly, employeeOnly, hrOrManager};
