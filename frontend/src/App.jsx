@@ -26,13 +26,12 @@ import ResetPassword from './pages/Auth/ResetPassword';
 
 // HR Pages
 import HrDashboard from './pages/Hr/HrDashboard';
-// import ManageUsers from './pages/Hr/ManageUsers';
-// import ManageTeams from './pages/Hr/ManageTeams';
-// import CreateEmployee from './pages/Hr/CreateEmployee';
-// import EditEmployee from './pages/Hr/EditEmployee';
-// import CreateTeam from './pages/Hr/CreateTeam';
-// import CreateTeam from './pages/Hr/EditTeam';
-// import HrProjects from './pages/Hr/HrProjects';
+import ManageUsers from './pages/Hr/ManageUsers';
+import CreateEmployee from './pages/Hr/CreateEmployee';
+import EditEmployee from './pages/Hr/EditEmployee';
+import ManageTeams from './pages/Hr/ManageTeams';
+import CreateTeam from './pages/Hr/CreateTeam';
+import EditTeam from './pages/Hr/EditTeam';
 
 // Manager Pages
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
@@ -95,14 +94,12 @@ const App = () => {
 						{/* ===== HR Routes ===== */}
 						<Route element={<PrivateRoute allowedRoles={['hr']} />}>
 							<Route path='/hr/dashboard' element={<HrDashboard />} />
-							{/* <Route path='/hr/employees' element={<ManageUsers />} />
+							<Route path='/hr/employees' element={<ManageUsers />} />
 							<Route path='/hr/employees/create' element={<CreateEmployee />} />
 							<Route path='/hr/employees/edit/:id' element={<EditEmployee />} />
 							<Route path='/hr/teams' element={<ManageTeams />} />
 							<Route path='/hr/teams/create' element={<CreateTeam />} />
-							<Route path='/hr/projects' element={<HrProjects />} />
-							<Route path='/hr/tasks' element={<HrTasks />} />
-							*/}
+							<Route path='/hr/teams/edit/:id' element={<EditTeam />} />
 						</Route>
 
 						{/* ===== Manager Routes ===== */}
@@ -110,10 +107,10 @@ const App = () => {
 							<Route path='/manager/dashboard' element={<ManagerDashboard />} />
 							{/* <Route path='/manager/teams' element={<ManagerTeams />} />
 							<Route path='/manager/projects' element={<ManagerProjects />} />
-							<Route path='/manager/teams/projects' element={<TeamProjects />} />
-							<Route path='/manager/projects/create' element={<CreateProject />} />
-							<Route path='/manager/projects/edit/:id' element={<EditProject />} />
-							<Route path='/manager/projects/:projectId' element={<ProjectDetails />} />
+							<Route path='/manager/teams/projects' element={<TeamProjects />} /> */}
+							{/* <Route path='/manager/projects/create' element={<CreateProject />} /> */}
+							{/* <Route path='/manager/projects/edit/:id' element={<EditProject />} /> */}
+							{/* <Route path='/manager/projects/:projectId' element={<ProjectDetails />} />
 							<Route path='/manager/projects/:projectId/tasks' element={<ProjectTasks />} />
 							<Route path='/manager/projects/:projectId/tasks/create' element={<CreateTask />} />
 							<Route path='/manager/projects/:projectId/tasks/edit/:taskId' element={<EditTask />} />
@@ -123,8 +120,8 @@ const App = () => {
 						{/* ===== Employee Routes ===== */}
 						<Route element={<PrivateRoute allowedRoles={['employee']} />}>
 							<Route path='/employee/dashboard' element={<EmployeeDashboard />} />
-							{/* <Route path='/employee/tasks' element={<EmployeeTasks />} />
-							<Route path='/employee/tasks/:taskId' element={<TaskDetails />} />
+							{/* <Route path='/employee/tasks' element={<EmployeeTasks />} /> */}
+							{/* <Route path='/employee/tasks/:taskId' element={<TaskDetails />} />
 							<Route path='/employee/profile' element={<EmployeeProfile />} /> */}
 						</Route>
 

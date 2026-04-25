@@ -17,7 +17,7 @@ const sanitizeText = (input) => {
     // Remove HTML tags and dangerous characters
     return input
         .trim()
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/<[^>]*>/g, '')  // Remove HTML tags
         .replace(/[<>]/g, '')     // Remove < and >
         .substring(0, 255);       // Limit length
 };

@@ -8,12 +8,6 @@ const { sanitizeText } = require('../utils/validation');
 //*======================== [PROJECTS] ======================
 
 // 1. Create new project (Manager only)
-// @desc	create a new project (Manager only)
-// @route	POST /api/projects
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
 const createProject = async (req, res) => {
 	try {
 		const projectBody = req.body;
@@ -30,7 +24,6 @@ const createProject = async (req, res) => {
 			if (projectName) projectName = sanitizeText(projectName);
 			if (description) description = sanitizeText(description);
 
-			// Validation
 			const team = await Team.findOne({
 				_id: teamId,
 				isDeleted: false,
@@ -41,15 +34,13 @@ const createProject = async (req, res) => {
 					success: false,
 					message: "Team Not Found"
 				});
-			// Date validation
+
 			const today = new Date();
 			today.setHours(0, 0, 0, 0);
 
-			// Check startDate is not in the past (can be today or future)
 			if (startDate) {
 				const start = new Date(startDate);
 				start.setHours(0, 0, 0, 0);
-
 				if (start < today) {
 					return res.status(400).json({
 						success: false,
@@ -58,11 +49,9 @@ const createProject = async (req, res) => {
 				}
 			}
 
-			// Check endDate is not in the past
 			if (endDate) {
 				const end = new Date(endDate);
 				end.setHours(0, 0, 0, 0);
-
 				if (end < today) {
 					return res.status(400).json({
 						success: false,
@@ -71,13 +60,11 @@ const createProject = async (req, res) => {
 				}
 			}
 
-			// Check endDate is after startDate
 			if (startDate && endDate) {
 				const start = new Date(startDate);
 				const end = new Date(endDate);
 				start.setHours(0, 0, 0, 0);
 				end.setHours(0, 0, 0, 0);
-
 				if (end < start) {
 					return res.status(400).json({
 						success: false,
@@ -120,12 +107,6 @@ const createProject = async (req, res) => {
 };
 
 // 2. Get all projects (Manager/Admin only)
-// @desc	Get all projects
-// @route	GET /api/projects
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
 const getAllProjects = async (req, res) => {
 	try {
 		if (!req.user) {
@@ -180,13 +161,7 @@ const getAllProjects = async (req, res) => {
 	}
 };
 
-// 3. Get single project by ID (Manager/Admin only)
-// @desc	Get single project
-// @route	GET /api/projects/:id
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
+// 3. Get single project by ID
 const getProjectById = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -211,6 +186,7 @@ const getProjectById = async (req, res) => {
 	}
 };
 
+// 4. Update project (Manager only)
 const updateProject = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -233,11 +209,9 @@ const updateProject = async (req, res) => {
 			status
 		} = req.body;
 
-		// Sanitize
 		if (projectName) projectName = sanitizeText(projectName);
 		if (description) description = sanitizeText(description);
 
-		// Validate team if provided
 		if (teamId) {
 			const team = await Team.findOne({
 				_id: teamId,
@@ -251,13 +225,14 @@ const updateProject = async (req, res) => {
 				});
 			}
 		}
+
 		if (status && !["pending", "in-progress", "done"].includes(status)) {
 			return res.status(400).json({
 				success: false,
 				message: "Invalid status value. Must be one of: pending, in-progress, done",
 			})
 		}
-		// Date validations (same as create)
+
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
@@ -270,7 +245,6 @@ const updateProject = async (req, res) => {
 					message: "Start date cannot be in the past"
 				});
 			}
-			targetProject.startDate = startDate;
 		}
 
 		if (endDate) {
@@ -282,7 +256,6 @@ const updateProject = async (req, res) => {
 					message: "End date cannot be in the past"
 				});
 			}
-			targetProject.endDate = endDate;
 		}
 
 		if (startDate && endDate) {
@@ -298,7 +271,6 @@ const updateProject = async (req, res) => {
 			}
 		}
 
-		// Update fields
 		if (projectName) targetProject.projectName = projectName;
 		if (description) targetProject.description = description;
 		if (teamId) targetProject.teamId = teamId;
@@ -320,12 +292,8 @@ const updateProject = async (req, res) => {
 };
 
 // 5. Delete project (Manager/Admin only)
-// @desc	Delete project (Soft Delete).
-// @route	DELETE /api/projects/:id
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
+// @desc	Soft-delete a project with full cascade:
+//			- Soft-delete all tasks that belong to this project
 const deleteProject = async (req, res) => {
 	try {
 		const _id = req.params.id;
@@ -337,6 +305,13 @@ const deleteProject = async (req, res) => {
 				message: "Project not found or already deleted"
 			});
 
+		// 1. Soft-delete all tasks inside this project
+		await Task.updateMany(
+			{ projectId: _id, isDeleted: false },
+			{ $set: { isDeleted: true } }
+		);
+
+		// 2. Soft-delete the project
 		project.isDeleted = true;
 		await project.save();
 
@@ -357,12 +332,6 @@ const deleteProject = async (req, res) => {
 //*======================== [TASKS] ======================
 
 // 1. Create new task (Manager only)
-// @desc	create a new task (Manager only)
-// @route	POST /api/projects/:id/
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
 const createTask = async (req, res) => {
 	try {
 		const { projectId } = req.params;
@@ -378,7 +347,6 @@ const createTask = async (req, res) => {
 				message: "Project Not Found"
 			});
 		};
-
 
 		const taskBody = req.body;
 
@@ -401,17 +369,15 @@ const createTask = async (req, res) => {
 					message: "User Not Found"
 				})
 			}
+
 			const projectTeam = await Team.findOne({
 				_id: project.teamId,
 				isDeleted: false,
-			}
-			)
+			});
 
-			// Go to project team and extract members to chose from
 			const isUserInTeam = projectTeam.members.some(
-				// without toString the ids will not be equal
 				member => member.toString() === userAssigned._id.toString()
-			) || projectTeam.managerId.toString() === userAssigned._id.toString()
+			) || projectTeam.managerId.toString() === userAssigned._id.toString();
 
 			if (!isUserInTeam) {
 				return res.status(400).json({
@@ -420,23 +386,22 @@ const createTask = async (req, res) => {
 				});
 			}
 
-			// Sanitize Input
 			if (title) title = sanitizeText(title);
 			if (description) description = sanitizeText(description);
 			if (checklist) {
-				checklist = checklist.map (item => ({
-					text: sanitizeText (item.text),
+				checklist = checklist.map(item => ({
+					text: sanitizeText(item.text),
 					completed: item.completed,
 				}))
 			};
 
-			// Validate Input
 			if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
 				return res.status(400).json({
 					success: false,
 					message: "Invalid priority value. Must be one of: low, medium, high, urgent",
 				})
 			}
+
 			if (estimatedHours && (isNaN(estimatedHours) || estimatedHours < 0)) {
 				return res.status(400).json({
 					success: false,
@@ -444,15 +409,12 @@ const createTask = async (req, res) => {
 				});
 			}
 
-			// Date validation
 			const today = new Date();
 			today.setHours(0, 0, 0, 0);
 
-			// Check startDate is not in the past (can be today or future)
 			if (startDate) {
 				const start = new Date(startDate);
 				start.setHours(0, 0, 0, 0);
-
 				if (start < today) {
 					return res.status(400).json({
 						success: false,
@@ -461,11 +423,9 @@ const createTask = async (req, res) => {
 				}
 			}
 
-			// Check dueDate is not in the past
 			if (dueDate) {
 				const end = new Date(dueDate);
 				end.setHours(0, 0, 0, 0);
-
 				if (end < today) {
 					return res.status(400).json({
 						success: false,
@@ -474,13 +434,11 @@ const createTask = async (req, res) => {
 				}
 			}
 
-			// Check dueDate is after startDate
 			if (startDate && dueDate) {
 				const start = new Date(startDate);
 				const end = new Date(dueDate);
 				start.setHours(0, 0, 0, 0);
 				end.setHours(0, 0, 0, 0);
-
 				if (end < start) {
 					return res.status(400).json({
 						success: false,
@@ -535,12 +493,6 @@ const createTask = async (req, res) => {
 };
 
 // 2. Get all tasks (Manager/Admin only)
-// @desc	Get all tasks
-// @route	GET /api/projects/:id/tasks
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
 const getAllTasks = async (req, res) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
@@ -617,13 +569,7 @@ const getAllTasks = async (req, res) => {
 	}
 };
 
-// 3. Get single task by ID (Manager/Admin only)
-// @desc	Get single task
-// @route	GET /api/projects/:projectId/tasks/:taskId
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
+// 3. Get single task by ID
 const getTaskById = async (req, res) => {
 	try {
 		const { projectId, taskId } = req.params;
@@ -660,6 +606,7 @@ const getTaskById = async (req, res) => {
 	}
 };
 
+// 4. Update task (Manager only)
 const updateTask = async (req, res) => {
 	try {
 		const { projectId, taskId } = req.params;
@@ -672,6 +619,7 @@ const updateTask = async (req, res) => {
 				message: "Project Not Found",
 			});
 		}
+
 		const targetTask = await Task.findById(taskId);
 
 		if (!targetTask || targetTask.isDeleted) {
@@ -693,18 +641,15 @@ const updateTask = async (req, res) => {
 			checklist,
 		} = req.body;
 
-
-		// Sanitize
 		if (title) title = sanitizeText(title);
 		if (description) description = sanitizeText(description);
 		if (checklist) {
-			checklist = checklist.map (item => ({
-				text: sanitizeText (item.text),
+			checklist = checklist.map(item => ({
+				text: sanitizeText(item.text),
 				completed: item.completed,
 			}))
 		}
 
-		// Validate Input
 		if (priority && !["low", "medium", "high", "urgent"].includes(priority)) {
 			return res.status(400).json({
 				success: false,
@@ -734,17 +679,15 @@ const updateTask = async (req, res) => {
 					message: "User Not Found",
 				})
 			}
+
 			const projectTeam = await Team.findOne({
 				_id: project.teamId,
 				isDeleted: false,
-			}
-			)
+			});
 
-			// Go to project team and extract members to chose from
 			const isUserInTeam = projectTeam.members.some(
-				// without toString the ids will not be equal
 				member => member.toString() === userAssigned._id.toString()
-			) || projectTeam.managerId.toString() === userAssigned._id.toString()
+			) || projectTeam.managerId.toString() === userAssigned._id.toString();
 
 			if (!isUserInTeam) {
 				return res.status(400).json({
@@ -752,11 +695,8 @@ const updateTask = async (req, res) => {
 					message: "User is not a member of the project's team"
 				});
 			}
-
 		}
 
-
-		// Date validations (same as create)
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
@@ -795,7 +735,6 @@ const updateTask = async (req, res) => {
 			}
 		}
 
-		// Update fields
 		if (title) targetTask.title = title;
 		if (description) targetTask.description = description;
 		if (estimatedHours) targetTask.estimatedHours = estimatedHours;
@@ -820,12 +759,6 @@ const updateTask = async (req, res) => {
 };
 
 // 5. Delete task (Manager/Admin only)
-// @desc	Delete task (Soft Delete).
-// @route	DELETE /api/projects/:projectId/tasks/:id
-// @access	Private/ Manager
-// @Headers: 
-// Authorization: Bearer Manager_TOKEN_HERE
-// Content-Type: application/json
 const deleteTask = async (req, res) => {
 	try {
 		const { projectId, taskId } = req.params;
