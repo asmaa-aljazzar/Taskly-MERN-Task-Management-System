@@ -1,14 +1,14 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 
-const Teams = ({ role }) => {
+const Profile = ({ role }) => {
 	void role;
 	return (
 		<>
-			Teams
+			Profile
 			<Outlet />
 		</>
 	)
 }
 
-export default Teams;
+export default Profile;

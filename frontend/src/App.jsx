@@ -35,15 +35,15 @@ import EditTeam from './pages/Hr/EditTeam';
 
 // Manager Pages
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
-// import ManagerTeams from './pages/Manager/ManagerTeams';
-// import ManagerProjects from './pages/Manager/ManagerProjects';
+import ManagerTeams from './pages/Manager/ManagerTeams';
+import ManageProjects from './pages/Manager/ManageProjects';
 // import TeamProjects from './pages/Manager/TeamProjects';
-// import CreateProject from './pages/Manager/CreateProject';
-// import EditProject from './pages/Manager/EditProject';
-// import ProjectDetails from './pages/Manager/ProjectDetails';
-// import ProjectTasks from './pages/Manager/ProjectTasks';
-// import CreateTask from './pages/Manager/CreateTask';
-// import EditTask from './pages/Manager/EditTask';
+import CreateProject from './pages/Manager/CreateProject';
+import EditProject from './pages/Manager/EditProject';
+import ProjectDetails from './pages/Manager/ProjectDetails';
+import ProjectTasks from './pages/Manager/ProjectTasks';
+import CreateTask from './pages/Manager/CreateTask';
+import EditTask from './pages/Manager/EditTask';
 // import ManagerProfile from './pages/Manager/ManagerProfile';
 
 // Employee Pages
@@ -105,16 +105,14 @@ const App = () => {
 						{/* ===== Manager Routes ===== */}
 						<Route element={<PrivateRoute allowedRoles={['manager']} />}>
 							<Route path='/manager/dashboard' element={<ManagerDashboard />} />
-							{/* <Route path='/manager/teams' element={<ManagerTeams />} />
-							<Route path='/manager/projects' element={<ManagerProjects />} />
-							<Route path='/manager/teams/projects' element={<TeamProjects />} /> */}
-							{/* <Route path='/manager/projects/create' element={<CreateProject />} /> */}
-							{/* <Route path='/manager/projects/edit/:id' element={<EditProject />} /> */}
-							{/* <Route path='/manager/projects/:projectId' element={<ProjectDetails />} />
-							<Route path='/manager/projects/:projectId/tasks' element={<ProjectTasks />} />
-							<Route path='/manager/projects/:projectId/tasks/create' element={<CreateTask />} />
-							<Route path='/manager/projects/:projectId/tasks/edit/:taskId' element={<EditTask />} />
-							<Route path='/manager/profile' element={<ManagerProfile />} /> */}
+							<Route path='/manager/teams' element={<ManagerTeams />} />
+							<Route path='/manager/projects' element={<ManageProjects />} />
+							<Route path='/manager/projects/create' element={<CreateProject />} />
+							<Route path='/manager/projects/edit/:id' element={<EditProject />} />
+							<Route path='/manager/projects/:id' element={<ProjectDetails />} />
+							<Route path='/manager/projects/:id/tasks/create' element={<CreateTask />} />
+							<Route path='/manager/projects/:id/tasks/:taskId/edit' element={<EditTask />} />
+							{/* <Route path='/manager/profile' element={<ManagerProfile />} /> */}
 						</Route>
 
 						{/* ===== Employee Routes ===== */}
