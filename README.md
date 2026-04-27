@@ -4,12 +4,12 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Installation](#-installation)
 - [Environment Variables](#environment-variables)
-- [Running the Application](#running-the-application)
+- [Running the Application](#-running-the-application)
 - [API Endpoints](#api-endpoints)
 - [Authentication Flow](#authentication-flow)
 - [Role-Based Access](#role-based-access)
@@ -79,37 +79,38 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - **Nodemailer** - Email sending
 
 ## 📁 Project Structure
+
 ```bash
 Taskly/
-├── frontend/ # React frontend application
-│ ├── src/
-│ │ ├── assets/ # Images and static files
-│ │ ├── components/ # Reusable components
-│ │ │ ├── inputs/ # Form inputs
-│ │ │ └── layouts/ # Layout components
-│ │ ├── context/ # React Context API
-│ │ ├── hooks/ # Custom hooks
-│ │ ├── pages/ # Page components
-│ │ │ ├── Auth/ # Authentication pages
-│ │ │ ├── Hr/ # HR pages
-│ │ │ ├── Manager/ # Manager pages
-│ │ │ └── Employee/ # Employee pages
-│ │ ├── routes/ # Route configuration
-│ │ └── utils/ # Utility functions
-│ └── package.json
+├── frontend/                 # React frontend application
+│   ├── src/
+│   │   ├── assets/           # Images and static files
+│   │   ├── components/       # Reusable components
+│   │   │   ├── inputs/       # Form inputs
+│   │   │   └── layouts/      # Layout components
+│   │   ├── context/          # React Context API
+│   │   ├── hooks/            # Custom hooks
+│   │   ├── pages/            # Page components
+│   │   │   ├── Auth/         # Authentication pages
+│   │   │   ├── Hr/           # HR pages
+│   │   │   ├── Manager/      # Manager pages
+│   │   │   └── Employee/     # Employee pages
+│   │   ├── routes/           # Route configuration
+│   │   └── utils/            # Utility functions
+│   └── package.json
 │
-├── backend/ # Express backend application
-│ ├── src/
-│ │ ├── config/ # Configuration files
-│ │ ├── controllers/ # Request handlers
-│ │ ├── middleware/ # Custom middleware
-│ │ ├── models/ # Mongoose models
-│ │ ├── routes/ # API routes
-│ │ ├── uploads/ # Uploaded files
-│ │ └── utils/ # Utility functions
-│ └── package.json
+├── backend/                  # Express backend application
+│   ├── src/
+│   │   ├── config/           # Configuration files
+│   │   ├── controllers/      # Request handlers
+│   │   ├── middleware/        # Custom middleware
+│   │   ├── models/           # Mongoose models
+│   │   ├── routes/           # API routes
+│   │   ├── uploads/          # Uploaded files
+│   │   └── utils/            # Utility functions
+│   └── package.json
 │
-├── package.json # Root package.json
+├── package.json              # Root package.json
 └── README.md
 ```
 
@@ -121,6 +122,7 @@ Taskly/
 - npm or yarn
 
 ### Step 1: Clone the repository
+
 ```bash
 git clone https://github.com/yourusername/taskly.git
 cd taskly
@@ -128,37 +130,84 @@ cd taskly
 
 ### Step 2: Install dependencies
 
-* Install all dependencies (frontend + backend)
+Install all dependencies (frontend + backend):
+
 ```bash
 npm run install:all
 ```
 
-* OR install separately:
+OR install separately:
+
 ```bash
 npm install --prefix frontend
 npm install --prefix backend
 ```
+
 ### Step 3: Set up environment variables
-*  Backend (.env)
-- Create a .env file in the backend folder:
 
-**PORT=8000**
-**MONGO_URI=MongoDB_Link**
-**JWT_SECRET=your_super_secret_jwt_key_here**
-**PORT=8000**
-**NODE_ENV=development**
+Create a `.env` file in the `backend/` folder:
 
-### 🏃 Running the Application
-* **Development Mode (Both frontend and backend)**
+```env
+PORT=8000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_jwt_key_here
+NODE_ENV=development
+```
+
+## Environment Variables
+
+| Variable    | Description                        | Example                  |
+|-------------|------------------------------------|--------------------------|
+| `PORT`      | Port the server runs on            | `8000`                   |
+| `MONGO_URI` | MongoDB connection string          | `mongodb://localhost/db` |
+| `JWT_SECRET`| Secret key for signing JWT tokens  | `mysecretkey`            |
+| `NODE_ENV`  | Application environment            | `development`            |
+
+## 🏃 Running the Application
+
+### Development Mode (Both frontend and backend)
 
 ```bash
 npm run dev
 ```
 
-* *This will start:*
+This will start:
 
-- Frontend: http://localhost:5173
+- **Frontend:** http://localhost:5173
+- **Backend:** http://localhost:8000
 
-- Backend: http://localhost:8000
+## API Endpoints
 
+> Full API documentation coming soon.
 
+## Authentication Flow
+
+1. User submits login credentials (email + password)
+2. Server validates credentials and returns a signed JWT
+3. Frontend stores the JWT and includes it in subsequent requests
+4. Protected routes verify the JWT via middleware
+5. Password reset flow sends a tokenized link to the user's email
+
+## Role-Based Access
+
+| Role     | Capabilities                                              |
+|----------|-----------------------------------------------------------|
+| HR       | Full user/team management, analytics, system overview     |
+| Manager  | Project & task management for assigned teams              |
+| Employee | View and update assigned tasks, manage personal profile   |
+
+## Screenshots
+
+> Screenshots coming soon.
+
+## Contributing
+
+1. Fork the repository
+2. Create a new branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
