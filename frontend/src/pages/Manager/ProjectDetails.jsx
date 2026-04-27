@@ -5,13 +5,11 @@ import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 
-// ─── Shared UI primitives ──────────────────────────────────────────────────────
-
 const StatusBadge = ({ status }) => {
 	const styles = {
-		done:          'bg-emerald-100 text-emerald-700',
+		done: 'bg-emerald-100 text-emerald-700',
 		'in-progress': 'bg-amber-100   text-amber-700',
-		pending:       'bg-rose-100    text-rose-700',
+		pending: 'bg-rose-100    text-rose-700',
 	};
 	const labels = { done: 'Done', 'in-progress': 'In Progress', pending: 'Pending' };
 	return (
@@ -24,9 +22,9 @@ const StatusBadge = ({ status }) => {
 const PriorityBadge = ({ priority }) => {
 	const styles = {
 		urgent: 'bg-purple-100 text-purple-700',
-		high:   'bg-rose-100   text-rose-700',
+		high: 'bg-rose-100   text-rose-700',
 		medium: 'bg-amber-100  text-amber-700',
-		low:    'bg-emerald-100 text-emerald-700',
+		low: 'bg-emerald-100 text-emerald-700',
 	};
 	return (
 		<span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${styles[priority] ?? 'bg-gray-100 text-gray-600'}`}>
@@ -60,16 +58,14 @@ const LoadingSpinner = () => (
 	</DashboardLayout>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 const ProjectDetails = () => {
-	const navigate   = useNavigate();
-	const { id }     = useParams();
+	const navigate = useNavigate();
+	const { id } = useParams();
 
-	const [project,  setProject]  = useState(null);
-	const [tasks,    setTasks]    = useState([]);
+	const [project, setProject] = useState(null);
+	const [tasks, setTasks] = useState([]);
 	const [fetching, setFetching] = useState(true);
-	const [search,   setSearch]   = useState('');
+	const [search, setSearch] = useState('');
 	const [deleteId, setDeleteId] = useState(null);
 	const [deleting, setDeleting] = useState(false);
 
@@ -114,11 +110,10 @@ const ProjectDetails = () => {
 
 	const fmt = (d) => d ? new Date(d).toLocaleDateString() : null;
 
-	// ── Task stats ─────────────────────────────────────────────────────────────
-	const total      = tasks.length;
-	const pending    = tasks.filter(t => t.status === 'pending').length;
+	const total = tasks.length;
+	const pending = tasks.filter(t => t.status === 'pending').length;
 	const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-	const completed  = tasks.filter(t => t.status === 'done').length;
+	const completed = tasks.filter(t => t.status === 'done').length;
 
 	const filtered = tasks.filter(t => {
 		if (!search) return true;
@@ -135,7 +130,7 @@ const ProjectDetails = () => {
 		<DashboardLayout activeMenuItem="Projects">
 			<div className="py-8 px-1 bg-gray-50 min-h-screen space-y-6">
 
-				{/* ── Header ── */}
+				{/* Header */}
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-3">
 						<button
@@ -163,17 +158,15 @@ const ProjectDetails = () => {
 					</button>
 				</div>
 
-				{/* ── Top row: info card + task stat cards ── */}
+				{/* Top row */}
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-
-					{/* Project Info */}
 					<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 lg:col-span-1">
 						<h2 className="text-sm font-semibold text-gray-700 mb-3">Project Info</h2>
-						<InfoRow label="Status"     value={<StatusBadge status={project.status} />} />
-						<InfoRow label="Team"       value={project.teamId?.name ?? project.teamId?.teamName} />
+						<InfoRow label="Status" value={<StatusBadge status={project.status} />} />
+						<InfoRow label="Team" value={project.teamId?.name ?? project.teamId?.teamName} />
 						<InfoRow label="Start Date" value={fmt(project.startDate)} />
-						<InfoRow label="End Date"   value={fmt(project.endDate)} />
-						<InfoRow label="Created"    value={fmt(project.createdAt)} />
+						<InfoRow label="End Date" value={fmt(project.endDate)} />
+						<InfoRow label="Created" value={fmt(project.createdAt)} />
 						{project.description && (
 							<div className="pt-3 mt-1">
 								<p className="text-xs text-gray-400 mb-1">Description</p>
@@ -182,13 +175,12 @@ const ProjectDetails = () => {
 						)}
 					</div>
 
-					{/* Task stat cards */}
 					<div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4 content-start">
 						{[
-							{ label: 'Total Tasks',  value: total,      color: 'text-blue-500',    bg: 'bg-blue-50' },
-							{ label: 'Pending',      value: pending,    color: 'text-rose-500',    bg: 'bg-rose-50' },
-							{ label: 'In Progress',  value: inProgress, color: 'text-amber-500',   bg: 'bg-amber-50' },
-							{ label: 'Completed',    value: completed,  color: 'text-emerald-500', bg: 'bg-emerald-50' },
+							{ label: 'Total Tasks', value: total, color: 'text-blue-500', bg: 'bg-blue-50' },
+							{ label: 'Pending', value: pending, color: 'text-rose-500', bg: 'bg-rose-50' },
+							{ label: 'In Progress', value: inProgress, color: 'text-amber-500', bg: 'bg-amber-50' },
+							{ label: 'Completed', value: completed, color: 'text-emerald-500', bg: 'bg-emerald-50' },
 						].map(({ label, value, color, bg }) => (
 							<div key={label} className={`${bg} rounded-xl p-4 flex flex-col gap-1`}>
 								<p className="text-xs font-medium text-gray-500">{label}</p>
@@ -198,14 +190,10 @@ const ProjectDetails = () => {
 					</div>
 				</div>
 
-				{/* ── Tasks table card ── */}
+				{/* Tasks table */}
 				<div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-
-					{/* Toolbar */}
 					<div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
 						<p className="text-sm font-semibold text-gray-700 sm:mr-auto">Tasks</p>
-
-						{/* Search */}
 						<div className="relative">
 							<svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
 								fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,8 +208,6 @@ const ProjectDetails = () => {
 								className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] w-56"
 							/>
 						</div>
-
-						{/* Create Task */}
 						<button
 							onClick={() => navigate(`/manager/projects/${id}/tasks/create`)}
 							className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
@@ -233,7 +219,6 @@ const ProjectDetails = () => {
 						</button>
 					</div>
 
-					{/* Table */}
 					<div className="overflow-x-auto">
 						<table className="min-w-full">
 							<thead>
@@ -249,10 +234,16 @@ const ProjectDetails = () => {
 							</thead>
 							<tbody className="divide-y divide-gray-50">
 								{filtered.length > 0 ? filtered.map((task) => (
-									<tr key={task._id} className="hover:bg-gray-50 transition-colors">
+									<tr
+										key={task._id}
+										onClick={() => navigate(`/manager/projects/${id}/tasks/${task._id}`)}
+										className="hover:bg-gray-50 transition-colors cursor-pointer"
+									>
 										<Td>
 											<div>
-												<p className="font-medium text-gray-800">{task.title}</p>
+												<p className="font-medium text-gray-800 group-hover:text-[#484bf2] transition-colors">
+													{task.title}
+												</p>
 												{task.description && (
 													<p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">
 														{task.description}
@@ -260,6 +251,7 @@ const ProjectDetails = () => {
 												)}
 											</div>
 										</Td>
+
 										<Td>
 											{task.assignedTo ? (
 												<div className="flex items-center gap-2">
@@ -272,6 +264,7 @@ const ProjectDetails = () => {
 												<span className="text-xs text-gray-400">Unassigned</span>
 											)}
 										</Td>
+
 										<Td><StatusBadge status={task.status} /></Td>
 										<Td><PriorityBadge priority={task.priority} /></Td>
 										<Td className="text-gray-400 text-xs">
@@ -286,7 +279,9 @@ const ProjectDetails = () => {
 												<span className="text-xs text-gray-300">—</span>
 											)}
 										</Td>
-										<Td>
+
+										{/* Actions — stop propagation so clicks here don't navigate to details */}
+										<Td onClick={e => e.stopPropagation()}>
 											<div className="flex items-center gap-3">
 												<button
 													onClick={() => navigate(`/manager/projects/${id}/tasks/${task._id}/edit`)}
@@ -324,9 +319,7 @@ const ProjectDetails = () => {
 								)) : (
 									<tr>
 										<td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-400">
-											{search
-												? `No tasks matching "${search}"`
-												: 'No tasks yet — create the first one!'}
+											{search ? `No tasks matching "${search}"` : 'No tasks yet — create the first one!'}
 										</td>
 									</tr>
 								)}

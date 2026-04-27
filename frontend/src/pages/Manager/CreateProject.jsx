@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import { useUserAuth } from '../../hooks/useUserAuth';
 
 // ─── Reusable field components ─────────────────────────────────────────────────
 
@@ -42,7 +43,8 @@ const FieldError = ({ message }) =>
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const CreateProject = () => {
-	const navigate = useNavigate();
+	const navigate    = useNavigate();
+	const { user }    = useUserAuth();
 
 	const [form, setForm] = useState({
 		projectName: '',
@@ -57,21 +59,27 @@ const CreateProject = () => {
 	const [loading,  setLoading]  = useState(false);
 	const [fetching, setFetching] = useState(true);
 
-	// ── Fetch teams for the dropdown ──────────────────────────────────────────
+	// ── Fetch only the manager's own teams ────────────────────────────────────
 	useEffect(() => {
 		const fetchTeams = async () => {
 			try {
-				const res = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
+				const res  = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
 				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
-				setTeams(list);
+
+				const myTeams = list.filter(t => {
+					const managerId = t.managerId?._id ?? t.managerId;
+					return managerId?.toString() === user?._id?.toString();
+				});
+
+				setTeams(myTeams);
 			} catch {
 				toast.error('Failed to load teams.');
 			} finally {
 				setFetching(false);
 			}
 		};
-		fetchTeams();
-	}, []);
+		if (user) fetchTeams();
+	}, [user]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	const handleChange = (e) => {
@@ -84,12 +92,6 @@ const CreateProject = () => {
 		const newErrors = {};
 		if (!form.projectName.trim()) newErrors.projectName = 'Project name is required';
 		if (!form.teamId)             newErrors.teamId      = 'Please select a team';
-
-		if (form.startDate && form.endDate) {
-			const start = new Date(form.startDate);
-			const end   = new Date(form.endDate);
-			if (end < start) newErrors.endDate = 'End date cannot be before start date';
-		}
 
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -104,6 +106,12 @@ const CreateProject = () => {
 			const end = new Date(form.endDate);
 			end.setHours(0, 0, 0, 0);
 			if (end < today) newErrors.endDate = 'End date cannot be in the past';
+		}
+
+		if (form.startDate && form.endDate) {
+			const start = new Date(form.startDate);
+			const end   = new Date(form.endDate);
+			if (end < start) newErrors.endDate = 'End date cannot be before start date';
 		}
 
 		return newErrors;
@@ -143,7 +151,6 @@ const CreateProject = () => {
 		}
 	};
 
-	// ── Today's date string for min= on date inputs ───────────────────────────
 	const todayStr = new Date().toISOString().split('T')[0];
 
 	return (
@@ -206,13 +213,16 @@ const CreateProject = () => {
 								<div className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-400">
 									Loading teams...
 								</div>
+							) : teams.length === 0 ? (
+								<div className="w-full px-3.5 py-2.5 text-sm border border-amber-200 bg-amber-50 rounded-lg text-amber-600">
+									You have no teams yet. Create a team first.
+								</div>
 							) : (
 								<Select name="teamId" value={form.teamId} onChange={handleChange}>
 									<option value="">Select a team</option>
 									{teams.map(team => (
 										<option key={team._id} value={team._id}>
 											{team.name ?? team.teamName}
-											{team.managerId?.fullName ? ` — ${team.managerId.fullName}` : ''}
 										</option>
 									))}
 								</Select>
@@ -250,7 +260,7 @@ const CreateProject = () => {
 						<div className="flex items-center gap-3 pt-2">
 							<button
 								type="submit"
-								disabled={loading || fetching}
+								disabled={loading || fetching || teams.length === 0}
 								className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
 							>
 								{loading ? (

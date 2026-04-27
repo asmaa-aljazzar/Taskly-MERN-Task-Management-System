@@ -22,6 +22,7 @@ import { Toaster } from 'react-hot-toast';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
+import Profile from './pages/Shared/Profile';
 // import Logout from './pages/Auth/Logout';
 
 // HR Pages
@@ -32,25 +33,24 @@ import EditEmployee from './pages/Hr/EditEmployee';
 import ManageTeams from './pages/Hr/ManageTeams';
 import CreateTeam from './pages/Hr/CreateTeam';
 import EditTeam from './pages/Hr/EditTeam';
+import TeamDetails from './pages/Hr/TeamDetails';
 
 // Manager Pages
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import ManagerTeams from './pages/Manager/ManagerTeams';
 import ManageProjects from './pages/Manager/ManageProjects';
-// import TeamProjects from './pages/Manager/TeamProjects';
 import CreateProject from './pages/Manager/CreateProject';
 import EditProject from './pages/Manager/EditProject';
 import ProjectDetails from './pages/Manager/ProjectDetails';
 import ProjectTasks from './pages/Manager/ProjectTasks';
 import CreateTask from './pages/Manager/CreateTask';
+import TaskDetails from './pages/Manager/TaskDetails';
 import EditTask from './pages/Manager/EditTask';
-// import ManagerProfile from './pages/Manager/ManagerProfile';
 
 // Employee Pages
 import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
-// import EmployeeTasks from './pages/Employee/EmployeeTasks';
-// import TaskDetails from './pages/Employee/TaskDetails';
-// import EmployeeProfile from './pages/Employee/EmployeeProfile';
+import MyTasks from './pages/Employee/MyTasks';
+import EmployeeTaskDetails from './pages/Employee/EmployeeTaskDetails';
 
 const Root = () => {
 	const { user, loading } = React.useContext(UserContext);
@@ -89,6 +89,9 @@ const App = () => {
 							<Route path='/forgot-password' element={<ForgotPassword />} />
 							<Route path='/reset-password/:token' element={<ResetPassword />} />
 						</Route>
+
+
+
 						{/* <Route path='/logout' element={<Logout />} /> */}
 
 						{/* ===== HR Routes ===== */}
@@ -100,6 +103,10 @@ const App = () => {
 							<Route path='/hr/teams' element={<ManageTeams />} />
 							<Route path='/hr/teams/create' element={<CreateTeam />} />
 							<Route path='/hr/teams/edit/:id' element={<EditTeam />} />
+							<Route path="/hr/teams/:id" element={<TeamDetails />} />
+							<Route element={<PrivateRoute allowedRoles={['hr']} />}>
+								<Route path='/hr/profile' element={<Profile />} />
+							</Route>
 						</Route>
 
 						{/* ===== Manager Routes ===== */}
@@ -111,16 +118,21 @@ const App = () => {
 							<Route path='/manager/projects/edit/:id' element={<EditProject />} />
 							<Route path='/manager/projects/:id' element={<ProjectDetails />} />
 							<Route path='/manager/projects/:id/tasks/create' element={<CreateTask />} />
+							<Route path="/manager/projects/:id/tasks/:taskId" element={<TaskDetails />} />
 							<Route path='/manager/projects/:id/tasks/:taskId/edit' element={<EditTask />} />
-							{/* <Route path='/manager/profile' element={<ManagerProfile />} /> */}
+							<Route element={<PrivateRoute allowedRoles={['manager']} />}>
+								<Route path='/manager/profile' element={<Profile />} />
+							</Route>
 						</Route>
 
 						{/* ===== Employee Routes ===== */}
 						<Route element={<PrivateRoute allowedRoles={['employee']} />}>
 							<Route path='/employee/dashboard' element={<EmployeeDashboard />} />
-							{/* <Route path='/employee/tasks' element={<EmployeeTasks />} /> */}
-							{/* <Route path='/employee/tasks/:taskId' element={<TaskDetails />} />
-							<Route path='/employee/profile' element={<EmployeeProfile />} /> */}
+							<Route path='/employee/tasks' element={<MyTasks />} />
+							<Route path='/employee/tasks/:taskId' element={<EmployeeTaskDetails />} />
+							<Route element={<PrivateRoute allowedRoles={['employee']} />}>
+								<Route path='/employee/profile' element={<Profile />} />
+							</Route>
 						</Route>
 
 						{/* ===== Root Route ===== */}

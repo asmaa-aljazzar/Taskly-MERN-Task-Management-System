@@ -44,8 +44,8 @@ const LoadingSpinner = () => (
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const ManageTeams = () => {
-	const navigate  = useNavigate();
-	const [teams, setTeams]   = useState([]);
+	const navigate = useNavigate();
+	const [teams, setTeams] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [search, setSearch] = useState('');
 
@@ -66,10 +66,10 @@ const ManageTeams = () => {
 
 	if (loading) return <LoadingSpinner />;
 
-	const total          = teams.length;
-	const withManager    = teams.filter(t => t.managerId).length;
+	const total = teams.length;
+	const withManager = teams.filter(t => t.managerId).length;
 	const withoutManager = total - withManager;
-	const totalMembers   = teams.reduce((acc, t) => acc + (t.members?.length ?? 0), 0);
+	const totalMembers = teams.reduce((acc, t) => acc + (t.members?.length ?? 0), 0);
 
 	const filtered = teams.filter(t => {
 		if (!search) return true;
@@ -154,7 +154,11 @@ const ManageTeams = () => {
 							</thead>
 							<tbody className="divide-y divide-gray-50">
 								{filtered.length > 0 ? filtered.map((team, i) => (
-									<tr key={team._id ?? i} className="hover:bg-gray-50 transition-colors">
+									<tr
+										key={team._id ?? i}
+										onClick={() => navigate(`/hr/teams/${team._id}`)}
+										className="hover:bg-gray-50 transition-colors cursor-pointer"
+									>
 										<Td>
 											<div>
 												<p className="font-medium text-gray-800">{team.name}</p>
@@ -197,7 +201,7 @@ const ManageTeams = () => {
 										<Td className="text-gray-400 text-xs">
 											{team.createdAt ? new Date(team.createdAt).toLocaleDateString() : '—'}
 										</Td>
-										<Td>
+										<Td onClick={e => e.stopPropagation()}>
 											<button
 												onClick={() => navigate(`/hr/teams/edit/${team._id}`)}
 												className="text-xs text-[#484bf2] hover:underline font-medium"
