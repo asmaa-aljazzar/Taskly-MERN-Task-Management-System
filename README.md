@@ -1,16 +1,16 @@
 # Taskly - HR Management System
 
-Taskly is a comprehensive HR Management System designed to streamline employee management, team coordination, project tracking, and task assignment for organizations of all sizes.
+Taskly is a comprehensive HR Management System designed to streamline employee management, team coordination, project tracking, and task assignment for organisations of all sizes.
 
 ## 📋 Table of Contents
 
 - [Features](#-features)
 - [Screenshots](#-screenshots)
-- [Tech Stack](#️-tech-stack)
+- [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
 - [Environment Variables](#-environment-variables)
-- [Create the first hr](#-create-the-first-hr)
+- [Create the first hr](#create-the-first-hr)
 - [Running the Application](#-running-the-application)
 - [Authentication Flow](#authentication-flow)
 - [Role-Based Access](#role-based-access)
