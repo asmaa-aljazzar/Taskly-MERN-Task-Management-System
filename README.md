@@ -5,15 +5,13 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 ## 📋 Table of Contents
 
 - [Features](#-features)
-- [Tech Stack](#-tech-stack)
+- [Tech Stack](#️-tech-stack)
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
-- [Environment Variables](#environment-variables)
+- [Environment Variables](#-environment-variables)
 - [Running the Application](#-running-the-application)
-- [API Endpoints](#api-endpoints)
 - [Authentication Flow](#authentication-flow)
 - [Role-Based Access](#role-based-access)
-- [Screenshots](#screenshots)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -56,16 +54,17 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - 📱 Responsive design
 - 🎨 Modern UI with Tailwind CSS
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** - UI library
-- **React Router v6** - Navigation and routing
-- **Tailwind CSS** - Styling
+- **React 19** - UI library
+- **React Router v7** - Navigation and routing
+- **Tailwind CSS v4** - Styling
 - **Axios** - HTTP requests
 - **React Hot Toast** - Notifications
 - **Recharts** - Charts and analytics
-- **Lucide React** - Icons
+- **React Icons** - Icons
+- **Moment.js** - Date formatting and manipulation
 - **Vite** - Build tool
 
 ### Backend
@@ -76,48 +75,50 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - **JWT** - Authentication
 - **Bcryptjs** - Password hashing
 - **Multer** - File uploads
-- **Nodemailer** - Email sending
+- **ExcelJS** - Excel file generation
+- **CORS** - Cross-origin resource sharing
+- **Dotenv** - Environment variable management
 
 ## 📁 Project Structure
 
 ```bash
 Taskly/
-├── frontend/                 # React frontend application
+├── frontend/                  # React frontend application
 │   ├── src/
-│   │   ├── assets/           # Images and static files
-│   │   ├── components/       # Reusable components
-│   │   │   ├── inputs/       # Form inputs
-│   │   │   └── layouts/      # Layout components
-│   │   ├── context/          # React Context API
-│   │   ├── hooks/            # Custom hooks
-│   │   ├── pages/            # Page components
-│   │   │   ├── Auth/         # Authentication pages
-│   │   │   ├── Hr/           # HR pages
-│   │   │   ├── Manager/      # Manager pages
-│   │   │   └── Employee/     # Employee pages
-│   │   ├── routes/           # Route configuration
-│   │   └── utils/            # Utility functions
+│   │   ├── assets/            # Images and static files
+│   │   ├── components/        # Reusable components
+│   │   │   ├── inputs/        # Form inputs
+│   │   │   └── layouts/       # Layout components
+│   │   ├── context/           # React Context API
+│   │   ├── hooks/             # Custom hooks
+│   │   ├── pages/             # Page components
+│   │   │   ├── Auth/          # Authentication pages
+│   │   │   ├── Hr/            # HR pages
+│   │   │   ├── Manager/       # Manager pages
+│   │   │   └── Employee/      # Employee pages
+│   │   ├── routes/            # Route configuration
+│   │   └── utils/             # Utility functions
 │   └── package.json
 │
-├── backend/                  # Express backend application
+├── backend/                   # Express backend application
 │   ├── src/
-│   │   ├── config/           # Configuration files
-│   │   ├── controllers/      # Request handlers
+│   │   ├── config/            # Configuration files
+│   │   ├── controllers/       # Request handlers
 │   │   ├── middleware/        # Custom middleware
-│   │   ├── models/           # Mongoose models
-│   │   ├── routes/           # API routes
-│   │   ├── uploads/          # Uploaded files
-│   │   └── utils/            # Utility functions
+│   │   ├── models/            # Mongoose models
+│   │   ├── routes/            # API routes
+│   │   ├── uploads/           # Uploaded files
+│   │   └── utils/             # Utility functions
 │   └── package.json
 │
-├── package.json              # Root package.json
+├── package.json               # Root package.json (concurrently)
 └── README.md
 ```
 
 ## 🚀 Installation
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v18 or higher)
 - MongoDB (local or Atlas)
 - npm or yarn
 
@@ -136,16 +137,16 @@ Install all dependencies (frontend + backend):
 npm run install:all
 ```
 
-OR install separately:
+Or install separately:
 
 ```bash
 npm install --prefix frontend
 npm install --prefix backend
 ```
 
-### Step 3: Set up environment variables
+## 🔧 Environment Variables
 
-Create a `.env` file in the `backend/` folder:
+Create a `.env` file inside the `backend/` folder with the following:
 
 ```env
 PORT=8000
@@ -154,60 +155,61 @@ JWT_SECRET=your_super_secret_jwt_key_here
 NODE_ENV=development
 ```
 
-## Environment Variables
-
-| Variable    | Description                        | Example                  |
-|-------------|------------------------------------|--------------------------|
-| `PORT`      | Port the server runs on            | `8000`                   |
-| `MONGO_URI` | MongoDB connection string          | `mongodb://localhost/db` |
-| `JWT_SECRET`| Secret key for signing JWT tokens  | `mysecretkey`            |
-| `NODE_ENV`  | Application environment            | `development`            |
-
 ## 🏃 Running the Application
 
-### Development Mode (Both frontend and backend)
+### Development mode (frontend + backend together)
 
 ```bash
 npm run dev
 ```
 
-This will start:
+This starts both servers concurrently:
 
-- **Frontend:** http://localhost:5173
-- **Backend:** http://localhost:8000
+| Service  | URL                   |
+|----------|-----------------------|
+| Frontend | http://localhost:5173 |
+| Backend  | http://localhost:8000 |
 
-## API Endpoints
+### Run separately
 
-> Full API documentation coming soon.
+```bash
+# Frontend only
+npm run dev --prefix frontend
+
+# Backend only
+npm run dev --prefix backend
+```
+
+### Production build
+
+```bash
+npm run build
+```
 
 ## Authentication Flow
 
 1. User submits login credentials (email + password)
-2. Server validates credentials and returns a signed JWT
-3. Frontend stores the JWT and includes it in subsequent requests
-4. Protected routes verify the JWT via middleware
-5. Password reset flow sends a tokenized link to the user's email
+2. Backend validates credentials and returns a signed JWT
+3. Frontend stores the JWT and attaches it to subsequent API requests
+4. Protected routes check the JWT via middleware on the backend
+5. On password reset, a token link is sent to the user's email
 
 ## Role-Based Access
 
-| Role     | Capabilities                                              |
+| Role     | Access Level                                              |
 |----------|-----------------------------------------------------------|
-| HR       | Full user/team management, analytics, system overview     |
-| Manager  | Project & task management for assigned teams              |
-| Employee | View and update assigned tasks, manage personal profile   |
-
-## Screenshots
-
-> Screenshots coming soon.
+| HR       | Full access — manage users, teams, projects, and tasks    |
+| Manager  | Manage projects and tasks within assigned teams           |
+| Employee | View and update progress on personally assigned tasks     |
 
 ## Contributing
 
 1. Fork the repository
-2. Create a new branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature-name`
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
 5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the ISC License.
