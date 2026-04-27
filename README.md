@@ -10,6 +10,7 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
 - [Environment Variables](#-environment-variables)
+- [Create the first hr](#-create-the-first-hr)
 - [Running the Application](#-running-the-application)
 - [Authentication Flow](#authentication-flow)
 - [Role-Based Access](#role-based-access)
@@ -214,6 +215,13 @@ MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_super_secret_jwt_key_here
 NODE_ENV=development
 ```
+
+## Create the first hr
+```bash
+cd backend
+npm run seed
+```
+- take the email and password to login with
 
 ## 🏃 Running the Application
 
