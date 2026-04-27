@@ -8,7 +8,7 @@ import { API_PATHS } from '../../utils/apiPaths';
 // ─── Reusable UI ───────────────────────────────────────────────────────────────
 
 const Avatar = ({ name }) => (
-	<div className="w-7 h-7 rounded-full bg-[#484bf2] flex items-center justify-center text-white text-xs font-bold shrink">
+	<div className="w-7 h-7 rounded-full bg-[#484bf2] flex items-center justify-center text-white text-xs font-bold shrink-0">
 		{name?.charAt(0)?.toUpperCase() || '?'}
 	</div>
 );
@@ -33,28 +33,93 @@ const StatCard = ({ label, value, accent, icon }) => (
 	</div>
 );
 
-const LoadingSpinner = () => (
-	<DashboardLayout activeMenuItem="Teams">
-		<div className="flex justify-center items-center h-96">
-			<div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#484bf2]" />
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+	if (totalPages <= 1) return null;
+
+	const getPages = () => {
+		const pages = [];
+		const delta = 2;
+		const left = currentPage - delta;
+		const right = currentPage + delta;
+		for (let i = 1; i <= totalPages; i++) {
+			if (i === 1 || i === totalPages || (i >= left && i <= right)) pages.push(i);
+		}
+		const withEllipsis = [];
+		let prev = null;
+		for (const page of pages) {
+			if (prev && page - prev > 1) withEllipsis.push('...');
+			withEllipsis.push(page);
+			prev = page;
+		}
+		return withEllipsis;
+	};
+
+	return (
+		<div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+			<p className="text-xs text-gray-400">Page {currentPage} of {totalPages}</p>
+			<div className="flex items-center gap-1">
+				<button
+					onClick={() => onPageChange(currentPage - 1)}
+					disabled={currentPage === 1}
+					className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+				>
+					<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+					</svg>
+				</button>
+				{getPages().map((page, i) =>
+					page === '...' ? (
+						<span key={`ellipsis-${i}`} className="w-7 h-7 flex items-center justify-center text-xs text-gray-400">…</span>
+					) : (
+						<button
+							key={page}
+							onClick={() => onPageChange(page)}
+							className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${page === currentPage ? 'bg-[#484bf2] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+						>
+							{page}
+						</button>
+					)
+				)}
+				<button
+					onClick={() => onPageChange(currentPage + 1)}
+					disabled={currentPage === totalPages}
+					className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+				>
+					<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+					</svg>
+				</button>
+			</div>
 		</div>
-	</DashboardLayout>
-);
+	);
+};
+
+const PAGE_SIZE = 10;
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const ManageTeams = () => {
 	const navigate = useNavigate();
+
 	const [teams, setTeams] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [search, setSearch] = useState('');
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pagination, setPagination] = useState(null);
 
+	// Stats are derived from the first full-count fetch (page=1, limit=1)
+	const [stats, setStats] = useState({ total: 0, withManager: 0, withoutManager: 0, totalMembers: 0 });
+
+	// ── Fetch page of teams ──────────────────────────────────────────────────
 	useEffect(() => {
 		const fetchTeams = async () => {
+			setLoading(true);
 			try {
-				const res = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
+				const params = new URLSearchParams({ page: currentPage, limit: PAGE_SIZE });
+				const res = await axiosInstance.get(`${API_PATHS.TEAM.GET_ALL_TEAMS}?${params}`);
 				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
 				setTeams(list);
+				setPagination(res.data.pagination || null);
 			} catch {
 				toast.error('Failed to load teams. Please try again.');
 			} finally {
@@ -62,15 +127,42 @@ const ManageTeams = () => {
 			}
 		};
 		fetchTeams();
+	}, [currentPage]);
+
+	// ── Fetch summary stats once (fetch all with a high limit, or use page 1 total) ─
+	// We use pagination.totalTeams from page 1 for the headline count.
+	// For per-page stats (withManager, members) we derive from the current page
+	// and update as pages change — or do a one-time full fetch here.
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				// Fetch page 1 just to get the totalTeams count cheaply
+				const res = await axiosInstance.get(`${API_PATHS.TEAM.GET_ALL_TEAMS}?page=1&limit=1`);
+				const total = res.data.pagination?.totalTeams ?? 0;
+
+				// For manager/member breakdown fetch a larger slice (or all) once
+				const allRes = await axiosInstance.get(`${API_PATHS.TEAM.GET_ALL_TEAMS}?page=1&limit=1000`);
+				const allTeams = Array.isArray(allRes.data) ? allRes.data : allRes.data.teams ?? [];
+
+				setStats({
+					total,
+					withManager:    allTeams.filter(t => t.managerId).length,
+					withoutManager: allTeams.filter(t => !t.managerId).length,
+					totalMembers:   allTeams.reduce((acc, t) => acc + (t.members?.length ?? 0), 0),
+				});
+			} catch {
+				// non-critical — leave stats at 0
+			}
+		};
+		fetchStats();
 	}, []);
 
-	if (loading) return <LoadingSpinner />;
+	const handlePageChange = (page) => {
+		setCurrentPage(page);
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	};
 
-	const total = teams.length;
-	const withManager = teams.filter(t => t.managerId).length;
-	const withoutManager = total - withManager;
-	const totalMembers = teams.reduce((acc, t) => acc + (t.members?.length ?? 0), 0);
-
+	// Client-side search within current page
 	const filtered = teams.filter(t => {
 		if (!search) return true;
 		const q = search.toLowerCase();
@@ -104,16 +196,16 @@ const ManageTeams = () => {
 
 				{/* Stat Cards */}
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-					<StatCard label="Total Teams" value={total} accent="bg-blue-50"
+					<StatCard label="Total Teams" value={stats.total} accent="bg-blue-50"
 						icon={<svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z" /></svg>}
 					/>
-					<StatCard label="Total Members" value={totalMembers} accent="bg-emerald-50"
+					<StatCard label="Total Members" value={stats.totalMembers} accent="bg-emerald-50"
 						icon={<svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
 					/>
-					<StatCard label="With Manager" value={withManager} accent="bg-amber-50"
+					<StatCard label="With Manager" value={stats.withManager} accent="bg-amber-50"
 						icon={<svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
 					/>
-					<StatCard label="No Manager" value={withoutManager} accent="bg-rose-50"
+					<StatCard label="No Manager" value={stats.withoutManager} accent="bg-rose-50"
 						icon={<svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
 					/>
 				</div>
@@ -132,7 +224,7 @@ const ManageTeams = () => {
 							</svg>
 							<input
 								type="text"
-								placeholder="Search teams..."
+								placeholder="Search teams…"
 								value={search}
 								onChange={e => setSearch(e.target.value)}
 								className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] w-60"
@@ -142,88 +234,104 @@ const ManageTeams = () => {
 
 					{/* Table */}
 					<div className="overflow-x-auto">
-						<table className="min-w-full">
-							<thead>
-								<tr className="border-b border-gray-100">
-									<Th>Team</Th>
-									<Th>Manager</Th>
-									<Th>Members</Th>
-									<Th>Created</Th>
-									<Th>Actions</Th>
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-gray-50">
-								{filtered.length > 0 ? filtered.map((team, i) => (
-									<tr
-										key={team._id ?? i}
-										onClick={() => navigate(`/hr/teams/${team._id}`)}
-										className="hover:bg-gray-50 transition-colors cursor-pointer"
-									>
-										<Td>
-											<div>
-												<p className="font-medium text-gray-800">{team.name}</p>
-												{team.description && (
-													<p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{team.description}</p>
-												)}
-											</div>
-										</Td>
-										<Td>
-											{team.managerId ? (
-												<div className="flex items-center gap-2">
-													<Avatar name={team.managerId.fullName} />
-													<span className="text-gray-700">{team.managerId.fullName}</span>
-												</div>
-											) : (
-												<span className="text-xs text-rose-400 font-medium">No Manager</span>
-											)}
-										</Td>
-										<Td>
-											<div className="flex items-center gap-1">
-												<div className="flex -space-x-1">
-													{(team.members ?? []).slice(0, 4).map((m, idx) => (
-														<div key={idx}
-															className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-[10px] font-bold">
-															{m.fullName?.charAt(0)?.toUpperCase() || '?'}
-														</div>
-													))}
-												</div>
-												{(team.members?.length ?? 0) > 4 && (
-													<span className="text-xs text-gray-400 ml-1">+{team.members.length - 4}</span>
-												)}
-												{(team.members?.length ?? 0) === 0 && (
-													<span className="text-xs text-gray-400">No members</span>
-												)}
-												{(team.members?.length ?? 0) > 0 && (
-													<span className="text-xs text-gray-500 ml-1">{team.members.length}</span>
-												)}
-											</div>
-										</Td>
-										<Td className="text-gray-400 text-xs">
-											{team.createdAt ? new Date(team.createdAt).toLocaleDateString() : '—'}
-										</Td>
-										<Td onClick={e => e.stopPropagation()}>
-											<button
-												onClick={() => navigate(`/hr/teams/edit/${team._id}`)}
-												className="text-xs text-[#484bf2] hover:underline font-medium"
-											>
-												Edit
-											</button>
-										</Td>
+						{loading ? (
+							<div className="flex justify-center items-center h-48">
+								<div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-[#484bf2]" />
+							</div>
+						) : (
+							<table className="min-w-full">
+								<thead>
+									<tr className="border-b border-gray-100">
+										<Th>Team</Th>
+										<Th>Manager</Th>
+										<Th>Members</Th>
+										<Th>Created</Th>
+										<Th>Actions</Th>
 									</tr>
-								)) : (
-									<tr>
-										<td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
-											{search ? `No teams found matching "${search}"` : 'No teams found'}
-										</td>
-									</tr>
-								)}
-							</tbody>
-						</table>
+								</thead>
+								<tbody className="divide-y divide-gray-50">
+									{filtered.length > 0 ? filtered.map((team, i) => (
+										<tr
+											key={team._id ?? i}
+											onClick={() => navigate(`/hr/teams/${team._id}`)}
+											className="hover:bg-gray-50 transition-colors cursor-pointer"
+										>
+											<Td>
+												<div>
+													<p className="font-medium text-gray-800">{team.name}</p>
+													{team.description && (
+														<p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{team.description}</p>
+													)}
+												</div>
+											</Td>
+											<Td>
+												{team.managerId ? (
+													<div className="flex items-center gap-2">
+														<Avatar name={team.managerId.fullName} />
+														<span className="text-gray-700">{team.managerId.fullName}</span>
+													</div>
+												) : (
+													<span className="text-xs text-rose-400 font-medium">No Manager</span>
+												)}
+											</Td>
+											<Td>
+												<div className="flex items-center gap-1">
+													<div className="flex -space-x-1">
+														{(team.members ?? []).slice(0, 4).map((m, idx) => (
+															<div key={idx}
+																className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-[10px] font-bold">
+																{m.fullName?.charAt(0)?.toUpperCase() || '?'}
+															</div>
+														))}
+													</div>
+													{(team.members?.length ?? 0) > 4 && (
+														<span className="text-xs text-gray-400 ml-1">+{team.members.length - 4}</span>
+													)}
+													{(team.members?.length ?? 0) === 0 && (
+														<span className="text-xs text-gray-400">No members</span>
+													)}
+													{(team.members?.length ?? 0) > 0 && (
+														<span className="text-xs text-gray-500 ml-1">{team.members.length}</span>
+													)}
+												</div>
+											</Td>
+											<Td className="text-gray-400 text-xs">
+												{team.createdAt ? new Date(team.createdAt).toLocaleDateString() : '—'}
+											</Td>
+											<Td onClick={e => e.stopPropagation()}>
+												<button
+													onClick={() => navigate(`/hr/teams/edit/${team._id}`)}
+													className="text-xs text-[#484bf2] hover:underline font-medium"
+												>
+													Edit
+												</button>
+											</Td>
+										</tr>
+									)) : (
+										<tr>
+											<td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
+												{search ? `No teams found matching "${search}"` : 'No teams found'}
+											</td>
+										</tr>
+									)}
+								</tbody>
+							</table>
+						)}
 					</div>
 
-					{filtered.length > 0 && (
+					{/* Pagination */}
+					{!loading && pagination && pagination.totalPages > 1 && (
+						<Pagination
+							currentPage={currentPage}
+							totalPages={pagination.totalPages}
+							onPageChange={handlePageChange}
+						/>
+					)}
+
+					{/* Footer count */}
+					{!loading && pagination && (
 						<div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-							Showing {filtered.length} of {total} teams
+							Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, pagination.totalTeams)} of {pagination.totalTeams} teams
 						</div>
 					)}
 				</div>

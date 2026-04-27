@@ -283,12 +283,6 @@ const ProjectDetails = () => {
 										{/* Actions — stop propagation so clicks here don't navigate to details */}
 										<Td onClick={e => e.stopPropagation()}>
 											<div className="flex items-center gap-3">
-												<button
-													onClick={() => navigate(`/manager/projects/${id}/tasks/${task._id}/edit`)}
-													className="text-xs text-[#484bf2] hover:underline font-medium"
-												>
-													Edit
-												</button>
 												{deleteId === task._id ? (
 													<div className="flex items-center gap-1">
 														<button

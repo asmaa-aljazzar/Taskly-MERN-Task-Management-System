@@ -332,6 +332,7 @@ const deleteProject = async (req, res) => {
 //*======================== [TASKS] ======================
 
 // 1. Create new task (Manager only)
+// 1. Create new task (Manager only)
 const createTask = async (req, res) => {
 	try {
 		const { projectId } = req.params;
@@ -368,6 +369,14 @@ const createTask = async (req, res) => {
 					success: false,
 					message: "User Not Found"
 				})
+			}
+
+			// FIX: Only employees can be assigned to tasks
+			if (userAssigned.role !== 'employee') {
+				return res.status(400).json({
+					success: false,
+					message: "Only employees can be assigned to tasks"
+				});
 			}
 
 			const projectTeam = await Team.findOne({
@@ -486,6 +495,7 @@ const createTask = async (req, res) => {
 				message: "Error: Missing information please provide all fields"
 			});
 		};
+
 
 	} catch (err) {
 		catchError(err, res);
@@ -607,6 +617,7 @@ const getTaskById = async (req, res) => {
 };
 
 // 4. Update task (Manager only)
+// 4. Update task (Manager only)
 const updateTask = async (req, res) => {
 	try {
 		const { projectId, taskId } = req.params;
@@ -672,12 +683,21 @@ const updateTask = async (req, res) => {
 		}
 
 		if (assignedTo) {
+			// FIX: Check if user exists first
 			const userAssigned = await User.findById(assignedTo);
 			if (!userAssigned) {
 				return res.status(404).json({
 					success: false,
 					message: "User Not Found",
-				})
+				});
+			}
+			
+			// Then check role - only employees can be assigned
+			if (userAssigned.role !== 'employee') {
+				return res.status(400).json({
+					success: false,
+					message: "Only employees can be assigned to tasks"
+				});
 			}
 
 			const projectTeam = await Team.findOne({
@@ -757,7 +777,6 @@ const updateTask = async (req, res) => {
 		catchError(err, res);
 	}
 };
-
 // 5. Delete task (Manager/Admin only)
 const deleteTask = async (req, res) => {
 	try {
@@ -812,7 +831,7 @@ const updateTaskProgress = async (req, res) => {
 
 		// Only the assigned employee OR a manager can update progress
 		const isAssigned = task.assignedTo?.toString() === req.user._id.toString();
-		const isManager  = req.user.role === 'manager';
+		const isManager = req.user.role === 'manager';
 
 		if (!isAssigned && !isManager)
 			return res.status(403).json({ success: false, message: "Not authorized to update this task" });
@@ -825,7 +844,7 @@ const updateTaskProgress = async (req, res) => {
 
 		if (checklist) {
 			task.checklist = checklist.map(item => ({
-				text:      sanitizeText(item.text),
+				text: sanitizeText(item.text),
 				completed: item.completed,
 			}));
 		}

@@ -32,10 +32,10 @@ const createTeam = async (req, res) => {
 					message: "Manager Not Found"
 				});
 
-			if (!['hr', 'manager'].includes(manager.role)) {
+			if (manager.role !== 'manager') {
 				return res.status(400).json({
 					success: false,
-					message: "Team manager must be HR or Manager. Employee cannot be manager."
+					message: `Team manager must be Manager. ${manager.role} cannot be manager.`
 				});
 			}
 
@@ -213,10 +213,10 @@ const updateTeam = async (req, res) => {
 					message: "Manager Not Found",
 				});
 
-			if (!['hr', 'manager'].includes(manager.role)) {
+			if (manager.role !== 'manager') {
 				return res.status(400).json({
 					success: false,
-					message: "Team manager must be HR or Manager"
+					message: `Team manager must be Manager. ${manager.role} cannot be manager.`
 				});
 			}
 
