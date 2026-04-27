@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import { useUserAuth } from '../../hooks/useUserAuth';
 
 // ─── Reusable UI ───────────────────────────────────────────────────────────────
 
@@ -52,7 +53,8 @@ const LoadingSpinner = () => (
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const ManageProjects = () => {
-	const navigate = useNavigate();
+	const navigate       = useNavigate();
+	const { user }       = useUserAuth();
 	const [projects, setProjects] = useState([]);
 	const [loading,  setLoading]  = useState(true);
 	const [search,   setSearch]   = useState('');
@@ -60,16 +62,44 @@ const ManageProjects = () => {
 	useEffect(() => {
 		(async () => {
 			try {
-				const res = await axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS);
-				const list = Array.isArray(res.data) ? res.data : res.data.projects ?? [];
-				setProjects(list);
+				// Fetch projects and the manager's teams in parallel
+				const [projectsRes, teamsRes] = await Promise.all([
+					axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS),
+					axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS),
+				]);
+
+				const allProjects = Array.isArray(projectsRes.data)
+					? projectsRes.data
+					: projectsRes.data.projects ?? [];
+
+				const allTeams = Array.isArray(teamsRes.data)
+					? teamsRes.data
+					: teamsRes.data.teams ?? [];
+
+				// Keep only teams managed by the current user
+				const myTeamIds = new Set(
+					allTeams
+						.filter(t => {
+							const managerId = t.managerId?._id ?? t.managerId;
+							return managerId?.toString() === user?._id?.toString();
+						})
+						.map(t => t._id?.toString())
+				);
+
+				// Keep only projects whose teamId is one of the manager's teams
+				const myProjects = allProjects.filter(p => {
+					const teamId = p.teamId?._id ?? p.teamId;
+					return myTeamIds.has(teamId?.toString());
+				});
+
+				setProjects(myProjects);
 			} catch {
 				toast.error('Failed to load projects. Please try again.');
 			} finally {
 				setLoading(false);
 			}
 		})();
-	}, []);
+	}, [user]);
 
 	if (loading) return <LoadingSpinner />;
 
@@ -162,22 +192,20 @@ const ManageProjects = () => {
 							</thead>
 							<tbody className="divide-y divide-gray-50">
 								{filtered.length > 0 ? filtered.map((project, i) => (
-									<tr key={project._id ?? i} className="hover:bg-gray-50 transition-colors">
+									<tr
+										key={project._id ?? i}
+										onClick={() => navigate(`/manager/projects/${project._id}`)}
+										className="hover:bg-gray-50 transition-colors cursor-pointer"
+									>
 										<Td>
-											{/* Clicking the project name goes to the detail page */}
-											<button
-												onClick={() => navigate(`/manager/projects/${project._id}`)}
-												className="text-left group"
-											>
-												<p className="font-medium text-gray-800 group-hover:text-[#484bf2] transition-colors">
-													{project.projectName}
+											<p className="font-medium text-gray-800 group-hover:text-[#484bf2] transition-colors">
+												{project.projectName}
+											</p>
+											{project.description && (
+												<p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">
+													{project.description}
 												</p>
-												{project.description && (
-													<p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">
-														{project.description}
-													</p>
-												)}
-											</button>
+											)}
 										</Td>
 										<Td>
 											<StatusBadge status={project.status} />
@@ -195,17 +223,18 @@ const ManageProjects = () => {
 												? new Date(project.createdAt).toLocaleDateString()
 												: '—'}
 										</Td>
-										<Td>
+										{/* Stop propagation so action buttons don't trigger row navigation */}
+										<Td onClick={e => e.stopPropagation()}>
 											<div className="flex items-center gap-3">
-												<button
+												{/* <button
 													onClick={() => navigate(`/manager/projects/${project._id}`)}
 													className="text-xs text-[#484bf2] hover:underline font-medium"
 												>
 													View
-												</button>
+												</button> */}
 												<button
 													onClick={() => navigate(`/manager/projects/edit/${project._id}`)}
-													className="text-xs text-gray-500 hover:underline font-medium"
+													className="text-xs text-[#484bf2] hover:underline font-medium"
 												>
 													Edit
 												</button>

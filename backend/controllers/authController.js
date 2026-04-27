@@ -10,6 +10,8 @@ const {
 	sanitizePhone,
 	sanitizeUrl,
 } = require('../utils/validation');
+const fs = require('fs');
+const path = require('path');
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -217,29 +219,34 @@ const updateUserProfile = async (req, res) => {
 };
 
 // In your authController.js, add these:
-
 const uploadProfileImage = async (req, res) => {
 	try {
-		// Handle image upload
 		if (!req.file) return res.status(400).json({
 			success: false,
 			message: "No file uploaded",
 		});
-		// Check isDeleted
-		const user = await User.findById(req.user.id);
-		// const user = await User.findOne({ _id: req.user.id });
 
-		if (!user || user.isDeleted) return res.status(400).json({
+		const user = await User.findById(req.user.id);
+		if (!user || user.isDeleted) return res.status(404).json({
 			success: false,
 			message: "User not found",
-		})
+		});
+		// ── Delete old file from disk (if it exists and isn't the default) ──
+		if (user.profileImageUrl && !user.profileImageUrl.includes('default-avatar')) {
+			const oldPath = path.join(__dirname, '..', 'uploads', path.basename(user.profileImageUrl));
+			fs.unlink(oldPath, (err) => {
+				if (err) console.warn('Could not delete old profile image:', err.message);
+			});
+		}
 
 		const imageUrl = `/uploads/${req.file.filename}`;
 		user.profileImageUrl = imageUrl;
 		await user.save();
-		res.status(200).json({
+
+		return res.status(200).json({
 			success: true,
-			imageUrl
+			message: "Profile image updated",
+			imageUrl,
 		});
 	} catch (err) {
 		catchError(err, res);
@@ -248,20 +255,23 @@ const uploadProfileImage = async (req, res) => {
 
 const deleteProfileImage = async (req, res) => {
 	try {
-		// 1. Check if user exists and not deleted
 		const user = await User.findById(req.user.id);
-		if (!user || user.isDeleted) {
-			return res.status(404).json({
-				success: false,
-				message: "User not found",
+		if (!user || user.isDeleted) return res.status(404).json({
+			success: false,
+			message: "User not found",
+		});
+
+		// ── Delete current file from disk (if it exists and isn't the default) ──
+		if (user.profileImageUrl && !user.profileImageUrl.includes('default-avatar')) {
+			const oldPath = path.join(__dirname, '..', 'uploads', path.basename(user.profileImageUrl));
+			fs.unlink(oldPath, (err) => {
+				if (err) console.warn('Could not delete profile image:', err.message);
 			});
 		}
 
-		// 2. Just set the default image path
 		user.profileImageUrl = "/uploads/default-avatar.jpg";
 		await user.save();
 
-		// 3. Return success response
 		return res.status(200).json({
 			success: true,
 			message: "Profile image reset to default",
@@ -269,14 +279,13 @@ const deleteProfileImage = async (req, res) => {
 			user: {
 				_id: user._id,
 				fullName: user.fullName,
-				profileImageUrl: user.profileImageUrl
+				profileImageUrl: user.profileImageUrl,
 			}
 		});
-
 	} catch (err) {
 		catchError(err, res);
 	}
-}
+};
 
 // @desc	Forgot password
 // @route	POST /api/auth/forgot-password

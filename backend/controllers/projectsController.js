@@ -794,5 +794,52 @@ const deleteTask = async (req, res) => {
 		catchError(err, res);
 	}
 };
+// ─── 1. Add to projectsController.js ──────────────────────────────────────────
+// (add this function, then add it to module.exports)
 
-module.exports = { createProject, getAllProjects, getProjectById, updateProject, deleteProject, createTask, getAllTasks, getTaskById, updateTask, deleteTask };
+const updateTaskProgress = async (req, res) => {
+	try {
+		const { projectId, taskId } = req.params;
+		const { status, checklist } = req.body;
+
+		const project = await Project.findById(projectId);
+		if (!project || project.isDeleted)
+			return res.status(404).json({ success: false, message: "Project Not Found" });
+
+		const task = await Task.findById(taskId);
+		if (!task || task.isDeleted)
+			return res.status(404).json({ success: false, message: "Task Not Found" });
+
+		// Only the assigned employee OR a manager can update progress
+		const isAssigned = task.assignedTo?.toString() === req.user._id.toString();
+		const isManager  = req.user.role === 'manager';
+
+		if (!isAssigned && !isManager)
+			return res.status(403).json({ success: false, message: "Not authorized to update this task" });
+
+		if (status) {
+			if (!["pending", "in-progress", "done"].includes(status))
+				return res.status(400).json({ success: false, message: "Invalid status value" });
+			task.status = status;
+		}
+
+		if (checklist) {
+			task.checklist = checklist.map(item => ({
+				text:      sanitizeText(item.text),
+				completed: item.completed,
+			}));
+		}
+
+		await task.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "Task progress updated",
+			task,
+		});
+	} catch (err) {
+		catchError(err, res);
+	}
+};
+
+module.exports = { createProject, getAllProjects, getProjectById, updateProject, deleteProject, createTask, getAllTasks, getTaskById, updateTask, deleteTask, updateTaskProgress };

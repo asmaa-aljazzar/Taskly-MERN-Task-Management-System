@@ -19,9 +19,9 @@ const Avatar = ({ name, size = 'md' }) => {
 
 const StatusBadge = ({ status }) => {
 	const map = {
-		done:          ['bg-emerald-100 text-emerald-700', 'Done'],
-		'in-progress': ['bg-amber-100 text-amber-700',    'In Progress'],
-		pending:       ['bg-rose-100 text-rose-700',      'Pending'],
+		done: ['bg-emerald-100 text-emerald-700', 'Done'],
+		'in-progress': ['bg-amber-100 text-amber-700', 'In Progress'],
+		pending: ['bg-rose-100 text-rose-700', 'Pending'],
 	};
 	const [cls, label] = map[status] ?? ['bg-gray-100 text-gray-600', status];
 	return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{label}</span>;
@@ -58,11 +58,10 @@ const EmptyState = ({ icon, title, subtitle }) => (
 const TeamCard = ({ team, isSelected, onClick }) => (
 	<button
 		onClick={onClick}
-		className={`w-full text-left p-4 rounded-xl border transition-all ${
-			isSelected
+		className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
 				? 'border-[#484bf2] bg-[#484bf2]/5 shadow-sm'
 				: 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
-		}`}
+			}`}
 	>
 		<div className="flex items-start justify-between gap-2 mb-3">
 			<div className="flex-1 min-w-0">
@@ -79,7 +78,6 @@ const TeamCard = ({ team, isSelected, onClick }) => (
 		</div>
 
 		<div className="flex items-center gap-3">
-			{/* Member avatars */}
 			<div className="flex -space-x-1.5">
 				{(team.members ?? []).slice(0, 5).map((m, i) => (
 					<div
@@ -105,18 +103,17 @@ const TeamCard = ({ team, isSelected, onClick }) => (
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const ManagerTeams = () => {
-	const navigate         = useNavigate();
-	const { user }         = useContext(UserContext);
+	const navigate = useNavigate();
+	const { user } = useContext(UserContext);
 
-	const [teams,          setTeams]          = useState([]);
-	const [selectedTeam,   setSelectedTeam]   = useState(null);
-	const [projects,       setProjects]       = useState([]);
-	const [memberTasks,    setMemberTasks]    = useState({}); // { memberId: [tasks] }
-	const [loadingTeams,   setLoadingTeams]   = useState(true);
-	const [loadingDetail,  setLoadingDetail]  = useState(false);
-	const [activeTab,      setActiveTab]      = useState('members'); // 'members' | 'projects'
+	const [teams, setTeams] = useState([]);
+	const [selectedTeam, setSelectedTeam] = useState(null);
+	const [projects, setProjects] = useState([]);
+	const [memberTasks, setMemberTasks] = useState({});
+	const [loadingTeams, setLoadingTeams] = useState(true);
+	const [loadingDetail, setLoadingDetail] = useState(false);
+	const [activeTab, setActiveTab] = useState('members');
 
-	// ── Load team detail: projects + member tasks ─────────────────────────────
 	const selectTeam = async (team) => {
 		setSelectedTeam(team);
 		setActiveTab('members');
@@ -125,21 +122,19 @@ const ManagerTeams = () => {
 		setMemberTasks({});
 
 		try {
-			// 1. Get all projects and filter by this team
-			const projRes  = await axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS);
-			const allProj  = Array.isArray(projRes.data) ? projRes.data : projRes.data.projects ?? [];
+			const projRes = await axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS);
+			const allProj = Array.isArray(projRes.data) ? projRes.data : projRes.data.projects ?? [];
 			const teamProj = allProj.filter(p =>
 				(p.teamId?._id ?? p.teamId) === team._id
 			);
 			setProjects(teamProj);
 
-			// 2. For each project, get tasks and group by assignedTo
 			const taskMap = {};
 			await Promise.all(
 				teamProj.map(async (proj) => {
 					try {
 						const taskRes = await axiosInstance.get(API_PATHS.TASK.GET_ALL_TASKS(proj._id));
-						const tasks   = taskRes.data.tasks ?? [];
+						const tasks = taskRes.data.tasks ?? [];
 						tasks.forEach(task => {
 							const memberId = task.assignedTo?._id ?? task.assignedTo;
 							if (!memberId) return;
@@ -156,14 +151,12 @@ const ManagerTeams = () => {
 			setLoadingDetail(false);
 		}
 	};
-	// ── Fetch manager's teams ─────────────────────────────────────────────────
+
 	useEffect(() => {
 		(async () => {
 			try {
-				const res  = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
+				const res = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
 				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
-
-				// Keep only teams where this manager is the manager
 				const mine = list.filter(t => t.managerId?._id === user?._id || t.managerId === user?._id);
 				setTeams(mine);
 				if (mine.length > 0) selectTeam(mine[0]);
@@ -177,9 +170,8 @@ const ManagerTeams = () => {
 
 	if (loadingTeams) return <LoadingSpinner />;
 
-	// ── Stats for selected team ────────────────────────────────────────────────
-	const allTasks    = Object.values(memberTasks).flat();
-	const tasksDone   = allTasks.filter(t => t.status === 'done').length;
+	const allTasks = Object.values(memberTasks).flat();
+	const tasksDone = allTasks.filter(t => t.status === 'done').length;
 	const tasksActive = allTasks.filter(t => t.status === 'in-progress').length;
 
 	return (
@@ -243,14 +235,13 @@ const ManagerTeams = () => {
 											</div>
 										</div>
 
-										{/* Quick stats */}
 										{!loadingDetail && (
 											<div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-50">
 												{[
-													{ label: 'Members',    value: selectedTeam.members?.length ?? 0,  color: 'text-[#484bf2]' },
-													{ label: 'Projects',   value: projects.length,                   color: 'text-blue-500' },
-													{ label: 'Tasks Done', value: tasksDone,                         color: 'text-emerald-500' },
-													{ label: 'Active',     value: tasksActive,                       color: 'text-amber-500' },
+													{ label: 'Members', value: selectedTeam.members?.length ?? 0, color: 'text-[#484bf2]' },
+													{ label: 'Projects', value: projects.length, color: 'text-blue-500' },
+													{ label: 'Tasks Done', value: tasksDone, color: 'text-emerald-500' },
+													{ label: 'Active', value: tasksActive, color: 'text-amber-500' },
 												].map(({ label, value, color }) => (
 													<div key={label} className="text-center">
 														<p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -267,11 +258,10 @@ const ManagerTeams = () => {
 											<button
 												key={tab}
 												onClick={() => setActiveTab(tab)}
-												className={`px-4 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${
-													activeTab === tab
+												className={`px-4 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${activeTab === tab
 														? 'bg-white text-[#484bf2] shadow-sm'
 														: 'text-gray-500 hover:text-gray-700'
-												}`}
+													}`}
 											>
 												{tab}
 												<span className="ml-1.5 text-gray-400">
@@ -302,7 +292,7 @@ const ManagerTeams = () => {
 													) : (
 														(selectedTeam.members ?? []).map(member => {
 															const tasks = memberTasks[member._id] ?? [];
-															const done  = tasks.filter(t => t.status === 'done').length;
+															const done = tasks.filter(t => t.status === 'done').length;
 
 															return (
 																<div key={member._id} className="bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -332,27 +322,38 @@ const ManagerTeams = () => {
 																		</div>
 																	) : (
 																		<div className="divide-y divide-gray-50">
-																			{tasks.map(task => (
-																				<div key={task._id} className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
-																					<div className="flex-1 min-w-0">
-																						<p className="text-sm text-gray-700 font-medium truncate">{task.title}</p>
-																						<p className="text-xs text-gray-400 mt-0.5 truncate">
-																							{task.projectName}
-																							{task.dueDate && ` · Due ${new Date(task.dueDate).toLocaleDateString()}`}
-																						</p>
+																			{tasks.map(task => {
+																				const projectId = task.projectId?._id ?? task.projectId;
+																				return (
+																					<div
+																						key={task._id}
+																						onClick={() => navigate(`/manager/projects/${projectId}/tasks/${task._id}`)}
+																						className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors cursor-pointer"
+																					>
+																						<div className="flex-1 min-w-0">
+																							<p className="text-sm text-gray-700 font-medium truncate">{task.title}</p>
+																							<p className="text-xs text-gray-400 mt-0.5 truncate">
+																								{task.projectName}
+																								{task.dueDate && ` · Due ${new Date(task.dueDate).toLocaleDateString()}`}
+																							</p>
+																						</div>
+																						<div className="flex items-center gap-3 shrink-0">
+																							<PriorityDot priority={task.priority} />
+																							<StatusBadge status={task.status} />
+																							{/* Stop propagation so Edit doesn't also trigger row navigation */}
+																							<button
+																								onClick={e => {
+																									e.stopPropagation();
+																									navigate(`/manager/projects/${projectId}/tasks/${task._id}/edit`);
+																								}}
+																								className="text-xs text-[#484bf2] hover:underline font-medium"
+																							>
+																								Edit
+																							</button>
+																						</div>
 																					</div>
-																					<div className="flex items-center gap-3 shrink-0">
-																						<PriorityDot priority={task.priority} />
-																						<StatusBadge status={task.status} />
-																						<button
-																							onClick={() => navigate(`/manager/projects/${task.projectId ?? task.project}/tasks/${task._id}/edit`)}
-																							className="text-xs text-[#484bf2] hover:underline font-medium"
-																						>
-																							Edit
-																						</button>
-																					</div>
-																				</div>
-																			))}
+																				);
+																			})}
 																		</div>
 																	)}
 																</div>
@@ -377,8 +378,8 @@ const ManagerTeams = () => {
 														projects.map(project => {
 															const projTasks = Object.values(memberTasks).flat()
 																.filter(t => t.projectName === project.projectName);
-															const projDone  = projTasks.filter(t => t.status === 'done').length;
-															const progress  = projTasks.length > 0
+															const projDone = projTasks.filter(t => t.status === 'done').length;
+															const progress = projTasks.length > 0
 																? Math.round((projDone / projTasks.length) * 100)
 																: 0;
 
@@ -405,7 +406,6 @@ const ManagerTeams = () => {
 																		</button>
 																	</div>
 
-																	{/* Progress bar */}
 																	{projTasks.length > 0 && (
 																		<div className="mt-3">
 																			<div className="flex justify-between text-xs text-gray-400 mb-1">
@@ -421,7 +421,6 @@ const ManagerTeams = () => {
 																		</div>
 																	)}
 
-																	{/* Dates */}
 																	{(project.startDate || project.endDate) && (
 																		<div className="flex gap-4 mt-3 pt-3 border-t border-gray-50">
 																			{project.startDate && (

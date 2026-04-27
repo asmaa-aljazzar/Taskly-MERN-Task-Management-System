@@ -14,6 +14,7 @@ export const HR_SIDE_MENU_ITEMS_DATA = [
 	{ id: '03', label: 'Create Employee', icon: LuSquarePlus, path: '/hr/employees/create' },
 	{ id: '04', label: 'Teams', icon: LuUsers, path: '/hr/teams' },
 	{ id: '05', label: 'Create Team', icon: LuSquarePlus, path: '/hr/teams/create' },
+	{ id: '03', label: 'Profile', icon: LuUser, path: '/hr/profile' },
 	{ id: 'last', label: 'Logout', icon: LuLogOut, path: '/logout', isLogout: true },
 ];
 

@@ -13,6 +13,23 @@ const Team = require('../models/Team');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 
+const MAX_HIRE_DATE_YEARS_AGO = 50;
+
+// Helper: validates that a hire date is not in the future and not beyond the max past range
+const validateHireDate = (hireDate) => {
+	const now = new Date();
+	const minHireDate = new Date();
+	minHireDate.setFullYear(now.getFullYear() - MAX_HIRE_DATE_YEARS_AGO);
+
+	if (hireDate > now)
+		return { valid: false, message: "Hire date can't be in the future!" };
+
+	if (hireDate < minHireDate)
+		return { valid: false, message: `Hire date can't be more than ${MAX_HIRE_DATE_YEARS_AGO} years in the past!` };
+
+	return { valid: true };
+};
+
 // 1. Create new user (HR only)
 // @desc	create a new user (HR only)
 // @route	POST /api/users
@@ -41,6 +58,12 @@ const createUser = async (req, res) => {
 				});
 			}
 
+			const hireDateObj = new Date(hireDate);
+			const hireDateValidation = validateHireDate(hireDateObj);
+			if (!hireDateValidation.valid) {
+				return res.status(400).json({ message: hireDateValidation.message });
+			}
+
 			const userExist = await User.findOne({ email });
 			if (userExist)
 				return res.status(409).json({ message: "Email is already in use" });
@@ -55,7 +78,7 @@ const createUser = async (req, res) => {
 				phoneNumber,
 				profileImageUrl,
 				role,
-				hireDate
+				hireDate: hireDateObj
 			});
 
 			return res.status(201).json({
@@ -180,13 +203,16 @@ const updateUser = async (req, res) => {
 		if (role) role = sanitizeText(role);
 
 		let hireDate;
-		if (req.body.hireDate) hireDate = new Date(req.body.hireDate);
-
-		if (hireDate && hireDate > Date.now())
-			return res.status(400).json({
-				success: false,
-				message: "Hire date can't be in future!",
-			});
+		if (req.body.hireDate) {
+			hireDate = new Date(req.body.hireDate);
+			const hireDateValidation = validateHireDate(hireDate);
+			if (!hireDateValidation.valid) {
+				return res.status(400).json({
+					success: false,
+					message: hireDateValidation.message,
+				});
+			}
+		}
 
 		if (email && !validateEmail(email))
 			return res.status(400).json({

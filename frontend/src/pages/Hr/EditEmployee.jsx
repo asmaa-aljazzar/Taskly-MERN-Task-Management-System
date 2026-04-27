@@ -6,9 +6,12 @@ import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { useUserAuth } from '../../hooks/useUserAuth';
 
-const Field = ({ label, error, children }) => (
+const Field = ({ label, error, required, children }) => (
 	<div className="flex flex-col gap-1.5">
-		<label className="text-sm font-medium text-gray-700">{label}</label>
+		<label className="text-sm font-medium text-gray-700">
+			{label}
+			{required && <span className="text-rose-500 ml-0.5">*</span>}
+		</label>
 		{children}
 		{error && <p className="text-xs text-rose-500">{error}</p>}
 	</div>
@@ -29,6 +32,12 @@ const LoadingSpinner = () => (
 	</DashboardLayout>
 );
 
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+const minHireDate = new Date();
+minHireDate.setFullYear(today.getFullYear() - 50);
+const minHireDateStr = minHireDate.toISOString().split('T')[0];
+
 const EditEmployee = () => {
 	const { id } = useParams();
 	const navigate = useNavigate();
@@ -43,6 +52,9 @@ const EditEmployee = () => {
 		role:        'employee',
 		hireDate:    '',
 	});
+
+	// Snapshot of the data as it was when the page loaded — used to detect changes
+	const [original, setOriginal] = useState(null);
 
 	const [errors, setErrors]               = useState({});
 	const [loading, setLoading]             = useState(true);
@@ -65,14 +77,17 @@ const EditEmployee = () => {
 					? new Date(u.hireDate).toISOString().split('T')[0]
 					: '';
 
-				setForm({
+				const loaded = {
 					firstName,
 					lastName,
 					email:       u.email       ?? '',
 					phoneNumber: u.phoneNumber ?? '',
 					role:        u.role        ?? 'employee',
 					hireDate,
-				});
+				};
+
+				setForm(loaded);
+				setOriginal(loaded);
 				setOriginalRole(u.role ?? 'employee');
 			} catch {
 				toast.error('Failed to load user data.');
@@ -83,6 +98,10 @@ const EditEmployee = () => {
 		};
 		fetchUser();
 	}, [id, navigate]);
+
+	const hasChanges = original
+		? Object.keys(form).some((key) => form[key] !== original[key])
+		: false;
 
 	const set = (field) => (e) =>
 		setForm(prev => ({ ...prev, [field]: e.target.value }));
@@ -95,12 +114,19 @@ const EditEmployee = () => {
 		else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
 			                        e.email     = 'Invalid email format';
 		if (!form.hireDate)         e.hireDate  = 'Hire date is required';
-		else if (new Date(form.hireDate) > new Date())
+		else if (new Date(form.hireDate) > today)
 			                        e.hireDate  = "Hire date can't be in the future";
+		else if (new Date(form.hireDate) < minHireDate)
+			                        e.hireDate  = "Hire date can't be more than 50 years in the past";
 		return e;
 	};
 
 	const handleSave = async () => {
+		if (!hasChanges) {
+			toast("No changes were made.", { icon: 'ℹ️' });
+			return;
+		}
+
 		const e = validate();
 		if (Object.keys(e).length > 0) {
 			setErrors(e);
@@ -134,7 +160,6 @@ const EditEmployee = () => {
 		try {
 			await axiosInstance.delete(API_PATHS.USER.DELETE_USER(id));
 			toast.success('User deleted successfully.');
-			// Navigate and replace so the browser back button doesn't return to a deleted user
 			navigate('/hr/employees', { replace: true });
 		} catch (err) {
 			const msg = err.response?.data?.message ?? 'Failed to delete user.';
@@ -144,8 +169,7 @@ const EditEmployee = () => {
 		}
 	};
 
-	const today  = new Date().toISOString().split('T')[0];
-	const isHr   = originalRole === 'hr';
+	const isHr = originalRole === 'hr';
 
 	if (loading) return <LoadingSpinner />;
 
@@ -177,7 +201,7 @@ const EditEmployee = () => {
 					<div className="space-y-6">
 
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<Field label="First Name" error={errors.firstName}>
+							<Field label="First Name" error={errors.firstName} required>
 								<input
 									type="text"
 									placeholder="John"
@@ -186,7 +210,7 @@ const EditEmployee = () => {
 									className={inputClass(errors.firstName)}
 								/>
 							</Field>
-							<Field label="Last Name" error={errors.lastName}>
+							<Field label="Last Name" error={errors.lastName} required>
 								<input
 									type="text"
 									placeholder="Doe"
@@ -197,7 +221,7 @@ const EditEmployee = () => {
 							</Field>
 						</div>
 
-						<Field label="Email Address" error={errors.email}>
+						<Field label="Email Address" error={errors.email} required>
 							<input
 								type="email"
 								placeholder="john.doe@company.com"
@@ -207,7 +231,7 @@ const EditEmployee = () => {
 							/>
 						</Field>
 
-						<Field label="Phone Number (optional)" error={errors.phoneNumber}>
+						<Field label="Phone Number" error={errors.phoneNumber}>
 							<input
 								type="tel"
 								placeholder="+962 7X XXX XXXX"
@@ -218,7 +242,7 @@ const EditEmployee = () => {
 						</Field>
 
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<Field label="Role" error={errors.role}>
+							<Field label="Role" error={errors.role} required>
 								<select
 									value={form.role}
 									onChange={set('role')}
@@ -233,10 +257,11 @@ const EditEmployee = () => {
 									<p className="text-xs text-gray-400 mt-1">HR role cannot be changed</p>
 								)}
 							</Field>
-							<Field label="Hire Date" error={errors.hireDate}>
+							<Field label="Hire Date" error={errors.hireDate} required>
 								<input
 									type="date"
-									max={today}
+									min={minHireDateStr}
+									max={todayStr}
 									value={form.hireDate}
 									onChange={set('hireDate')}
 									className={inputClass(errors.hireDate)}
@@ -264,8 +289,8 @@ const EditEmployee = () => {
 						<div className="flex items-center gap-3">
 							<button
 								onClick={handleSave}
-								disabled={saving}
-								className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] disabled:opacity-60 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
+								disabled={saving || !hasChanges}
+								className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
 							>
 								{saving ? (
 									<>

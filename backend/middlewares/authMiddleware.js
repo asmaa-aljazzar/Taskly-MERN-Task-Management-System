@@ -14,7 +14,7 @@ const catchError = require('../utils/catchError')
 const protect = async (req, res, next) => {
 	try {
 		let token = req.headers.authorization;
-
+		
 		//This is a safety check to ensure the token exists and is properly formatted before you try to extract it.
 		//? The Bearer prefix:
 		//* is added by the frontend when sending the token to the backend.
@@ -92,5 +92,17 @@ const employeeOnly = async (req, res, next) => {
 		catchError(err, res);
 	}
 }
+
+const managerOrEmployee = async (req, res, next) => {
+	try {
+		if (req.user && (req.user.role == "manager" || req.user.role == "employee")) {
+			next();
+		} else {
+			return res.status(403).json({ message: "Access denied. Manager or Employee only." });
+		}
+	} catch (err) {
+		catchError(err, res);
+	}
+}
 //?  Module is a file that exports code - it's about organizing your code.
-module.exports = { protect, hrOnly, managerOnly, employeeOnly, hrOrManager};
+module.exports = { protect, hrOnly, managerOnly, employeeOnly, hrOrManager, managerOrEmployee };

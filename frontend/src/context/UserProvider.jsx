@@ -25,7 +25,7 @@ const UserProvider = ({ children }) => {
 	useEffect(() => {
 		const fetchUser = async () => {
 			const accessToken = localStorage.getItem("token");
-			
+
 			if (!accessToken) {
 				setLoading(false);
 				return;
@@ -48,7 +48,7 @@ const UserProvider = ({ children }) => {
 	}, []);
 
 	return (
-		<UserContext.Provider value={{ user, loading, updateUser, clearUser }}>
+		<UserContext.Provider value={{ user, setUser, loading, updateUser, clearUser }}> {/* ← added setUser */}
 			{children}
 		</UserContext.Provider>
 	);

@@ -17,7 +17,7 @@ const DashboardLayout = ({ children, activeMenuItem }) => {
 					</div>
 
 					{/* Main content — scrolls independently */}
-					<div className="flex-1 overflow-y-auto">
+					<div className="flex-1 overflow-y-auto bg-gray-50">
 						<div className="mx-5">
 							{children}
 						</div>
