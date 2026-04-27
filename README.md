@@ -79,6 +79,7 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - **Nodemailer** - Email sending
 
 ## 📁 Project Structure
+```bash
 Taskly/
 ├── frontend/ # React frontend application
 │ ├── src/
@@ -110,7 +111,7 @@ Taskly/
 │
 ├── package.json # Root package.json
 └── README.md
-
+```
 
 ## 🚀 Installation
 
