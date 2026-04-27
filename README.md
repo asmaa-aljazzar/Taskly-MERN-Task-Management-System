@@ -5,6 +5,7 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 ## 📋 Table of Contents
 
 - [Features](#-features)
+- [Screenshots](#-screenshots)
 - [Tech Stack](#️-tech-stack)
 - [Project Structure](#-project-structure)
 - [Installation](#-installation)
@@ -53,6 +54,64 @@ Taskly is a comprehensive HR Management System designed to streamline employee m
 - 🔐 Role-based access control
 - 📱 Responsive design
 - 🎨 Modern UI with Tailwind CSS
+
+## 📸 Screenshots
+
+### Authentication
+
+| Login | Forgot Password | Reset Password |
+|-------|----------------|----------------|
+| ![Login](screenshots/login.png) | ![Forgot Password](screenshots/forgot-password.png) | ![Reset Password](screenshots/reset-password.png) |
+
+---
+
+### HR Role
+
+**Dashboard & Employees**
+
+| HR Dashboard | Employees | Create Employee |
+|-------------|-----------|-----------------|
+| ![HR Dashboard](screenshots/hr-dashboard.png) | ![HR Employees](screenshots/hr-employees.png) | ![Create Employee](screenshots/hr-create-employee.png) |
+
+**Teams**
+
+| Teams | Team Details | Create Team |
+|-------|-------------|-------------|
+| ![HR Teams](screenshots/hr-teams.png) | ![Team Details](screenshots/hr-team-details.png) | ![Create Team](screenshots/hr-create-team.png) |
+
+**Profile**
+
+![HR Profile](screenshots/hr-profile.png)
+
+---
+
+### Manager Role
+
+**Dashboard & Teams**
+
+| Manager Dashboard | My Teams | My Teams & Projects |
+|------------------|----------|---------------------|
+| ![Manager Dashboard](screenshots/manager-dashboard.png) | ![My Teams](screenshots/manager-my-teams.png) | ![Teams & Projects](screenshots/manager-my-teams-projects.png) |
+
+**Projects & Tasks**
+
+| Projects | Create Project | Project Details | Task Details |
+|----------|---------------|-----------------|--------------|
+| ![Projects](screenshots/manager-projects.png) | ![Create Project](screenshots/manager-create-project.png) | ![Project Details](screenshots/manager-project-details.png) | ![Task Details](screenshots/manager-task-details.png) |
+
+**Profile**
+
+![Manager Profile](screenshots/manager-profile.png)
+
+---
+
+### Employee Role
+
+| Dashboard | My Tasks | Task Details | Profile |
+|-----------|----------|--------------|---------|
+| ![Employee Dashboard](screenshots/employee-dashboard.png) | ![My Tasks](screenshots/employee-my-tasks.png) | ![Task Details](screenshots/employee-task-details.png) | ![Profile](screenshots/employee-profile.png) |
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -111,6 +170,7 @@ Taskly/
 │   │   └── utils/             # Utility functions
 │   └── package.json
 │
+├── screenshots/               # App screenshots
 ├── package.json               # Root package.json (concurrently)
 └── README.md
 ```
