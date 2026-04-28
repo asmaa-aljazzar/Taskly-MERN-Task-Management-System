@@ -6,8 +6,6 @@ import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { useUserAuth } from '../../hooks/useUserAuth';
 
-// ─── Reusable field components ─────────────────────────────────────────────────
-
 const Label = ({ children, required }) => (
 	<label className="block text-sm font-medium text-gray-700 mb-1.5">
 		{children} {required && <span className="text-rose-500">*</span>}
@@ -15,22 +13,19 @@ const Label = ({ children, required }) => (
 );
 
 const Input = ({ ...props }) => (
-	<input
-		{...props}
+	<input {...props}
 		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400"
 	/>
 );
 
 const Textarea = ({ ...props }) => (
-	<textarea
-		{...props}
+	<textarea {...props}
 		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400 resize-none"
 	/>
 );
 
 const Select = ({ children, ...props }) => (
-	<select
-		{...props}
+	<select {...props}
 		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors bg-white text-gray-700"
 	>
 		{children}
@@ -40,11 +35,9 @@ const Select = ({ children, ...props }) => (
 const FieldError = ({ message }) =>
 	message ? <p className="mt-1 text-xs text-rose-500">{message}</p> : null;
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 const CreateProject = () => {
-	const navigate    = useNavigate();
-	const { user }    = useUserAuth();
+	const navigate     = useNavigate();
+	const { user }     = useUserAuth();
 
 	const [form, setForm] = useState({
 		projectName: '',
@@ -59,21 +52,21 @@ const CreateProject = () => {
 	const [loading,  setLoading]  = useState(false);
 	const [fetching, setFetching] = useState(true);
 
-	// ── Fetch only the manager's own teams ────────────────────────────────────
 	useEffect(() => {
 		const fetchTeams = async () => {
 			try {
 				const res  = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
 				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
-
 				const myTeams = list.filter(t => {
 					const managerId = t.managerId?._id ?? t.managerId;
 					return managerId?.toString() === user?._id?.toString();
 				});
-
 				setTeams(myTeams);
+				if (myTeams.length === 0) {
+					toast('You have no teams yet. Create a team first.', { icon: '⚠️' });
+				}
 			} catch {
-				toast.error('Failed to load teams.');
+				toast.error('Failed to load teams. Please refresh the page.');
 			} finally {
 				setFetching(false);
 			}
@@ -81,7 +74,6 @@ const CreateProject = () => {
 		if (user) fetchTeams();
 	}, [user]);
 
-	// ── Handlers ──────────────────────────────────────────────────────────────
 	const handleChange = (e) => {
 		const { name, value } = e.target;
 		setForm(prev => ({ ...prev, [name]: value }));
@@ -101,19 +93,15 @@ const CreateProject = () => {
 			start.setHours(0, 0, 0, 0);
 			if (start < today) newErrors.startDate = 'Start date cannot be in the past';
 		}
-
 		if (form.endDate) {
 			const end = new Date(form.endDate);
 			end.setHours(0, 0, 0, 0);
 			if (end < today) newErrors.endDate = 'End date cannot be in the past';
 		}
-
 		if (form.startDate && form.endDate) {
-			const start = new Date(form.startDate);
-			const end   = new Date(form.endDate);
-			if (end < start) newErrors.endDate = 'End date cannot be before start date';
+			if (new Date(form.endDate) < new Date(form.startDate))
+				newErrors.endDate = 'End date cannot be before start date';
 		}
-
 		return newErrors;
 	};
 
@@ -122,6 +110,12 @@ const CreateProject = () => {
 		const validationErrors = validate();
 		if (Object.keys(validationErrors).length > 0) {
 			setErrors(validationErrors);
+			const missing = [];
+			if (validationErrors.projectName) missing.push('project name');
+			if (validationErrors.teamId)      missing.push('team');
+			if (validationErrors.startDate)   missing.push('valid start date');
+			if (validationErrors.endDate)     missing.push('valid end date');
+			toast.error(`Please provide: ${missing.join(', ')}`);
 			return;
 		}
 
@@ -131,21 +125,31 @@ const CreateProject = () => {
 				projectName: form.projectName.trim(),
 				teamId:      form.teamId,
 				...(form.description.trim() && { description: form.description.trim() }),
-				...(form.startDate         && { startDate:   form.startDate }),
-				...(form.endDate           && { endDate:     form.endDate }),
+				...(form.startDate          && { startDate:   form.startDate }),
+				...(form.endDate            && { endDate:     form.endDate }),
 			};
 
 			const res = await axiosInstance.post(API_PATHS.Project.CREATE_PROJECT, payload);
 
 			if (res.data.success) {
-				toast.success('Project created successfully!');
+				toast.success(`"${form.projectName.trim()}" created successfully!`);
 				navigate('/manager/projects');
 			} else {
 				toast.error(res.data.message || 'Failed to create project');
 			}
 		} catch (err) {
-			const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
-			toast.error(msg);
+			const msg = err.response?.data?.message;
+			if (msg?.includes('Team Not Found')) {
+				toast.error('Selected team no longer exists. Please choose another.');
+			} else if (msg?.includes('Start date')) {
+				toast.error('Start date cannot be in the past.');
+				setErrors(prev => ({ ...prev, startDate: msg }));
+			} else if (msg?.includes('End date')) {
+				toast.error('End date is invalid.');
+				setErrors(prev => ({ ...prev, endDate: msg }));
+			} else {
+				toast.error(msg || 'Failed to create project. Please try again.');
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -157,7 +161,6 @@ const CreateProject = () => {
 		<DashboardLayout activeMenuItem="Create Project">
 			<div className="py-8 px-1 bg-gray-50 min-h-screen">
 
-				{/* Header */}
 				<div className="flex items-center gap-3 mb-8">
 					<button
 						onClick={() => navigate('/manager/projects')}
@@ -173,11 +176,9 @@ const CreateProject = () => {
 					</div>
 				</div>
 
-				{/* Form Card */}
 				<div className="max-w-2xl bg-white rounded-xl border border-gray-100 shadow-sm p-8">
 					<form onSubmit={handleSubmit} className="space-y-6">
 
-						{/* Project Name */}
 						<div>
 							<Label required>Project Name</Label>
 							<Input
@@ -190,7 +191,6 @@ const CreateProject = () => {
 							<FieldError message={errors.projectName} />
 						</div>
 
-						{/* Description */}
 						<div>
 							<Label>Description</Label>
 							<Textarea
@@ -206,7 +206,6 @@ const CreateProject = () => {
 							</p>
 						</div>
 
-						{/* Team */}
 						<div>
 							<Label required>Team</Label>
 							{fetching ? (
@@ -230,7 +229,6 @@ const CreateProject = () => {
 							<FieldError message={errors.teamId} />
 						</div>
 
-						{/* Dates */}
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<div>
 								<Label>Start Date</Label>
@@ -256,7 +254,6 @@ const CreateProject = () => {
 							</div>
 						</div>
 
-						{/* Actions */}
 						<div className="flex items-center gap-3 pt-2">
 							<button
 								type="submit"
@@ -288,7 +285,6 @@ const CreateProject = () => {
 
 					</form>
 				</div>
-
 			</div>
 		</DashboardLayout>
 	);

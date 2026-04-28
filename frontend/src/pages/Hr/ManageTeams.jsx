@@ -108,7 +108,7 @@ const ManageTeams = () => {
 	const [pagination, setPagination] = useState(null);
 
 	// Stats are derived from the first full-count fetch (page=1, limit=1)
-	const [stats, setStats] = useState({ total: 0, withManager: 0, withoutManager: 0, totalMembers: 0 });
+	const [stats, setStats] = useState({ total: 0, totalMembers: 0 });
 
 	// ── Fetch page of teams ──────────────────────────────────────────────────
 	useEffect(() => {
@@ -131,7 +131,6 @@ const ManageTeams = () => {
 
 	// ── Fetch summary stats once (fetch all with a high limit, or use page 1 total) ─
 	// We use pagination.totalTeams from page 1 for the headline count.
-	// For per-page stats (withManager, members) we derive from the current page
 	// and update as pages change — or do a one-time full fetch here.
 	useEffect(() => {
 		const fetchStats = async () => {
@@ -146,8 +145,6 @@ const ManageTeams = () => {
 
 				setStats({
 					total,
-					withManager:    allTeams.filter(t => t.managerId).length,
-					withoutManager: allTeams.filter(t => !t.managerId).length,
 					totalMembers:   allTeams.reduce((acc, t) => acc + (t.members?.length ?? 0), 0),
 				});
 			} catch {
@@ -195,18 +192,12 @@ const ManageTeams = () => {
 				</div>
 
 				{/* Stat Cards */}
-				<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+				<div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
 					<StatCard label="Total Teams" value={stats.total} accent="bg-blue-50"
 						icon={<svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z" /></svg>}
 					/>
 					<StatCard label="Total Members" value={stats.totalMembers} accent="bg-emerald-50"
 						icon={<svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-					/>
-					<StatCard label="With Manager" value={stats.withManager} accent="bg-amber-50"
-						icon={<svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-					/>
-					<StatCard label="No Manager" value={stats.withoutManager} accent="bg-rose-50"
-						icon={<svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
 					/>
 				</div>
 

@@ -23,27 +23,30 @@ const CreateEmployee = () => {
 	const navigate = useNavigate();
 
 	const [form, setForm] = useState({
-		firstName: '',
-		lastName: '',
-		email: '',
-		password: '',
+		firstName:   '',
+		lastName:    '',
+		email:       '',
+		password:    '',
 		phoneNumber: '',
-		role: 'employee',
-		hireDate: '',
+		role:        'employee',
+		hireDate:    '',
 	});
 
-	const [errors, setErrors] = useState({});
-	const [loading, setLoading] = useState(false);
+	const [errors,   setErrors]   = useState({});
+	const [loading,  setLoading]  = useState(false);
 	const [showPass, setShowPass] = useState(false);
 
-	const set = (field) => (e) =>
+	const set = (field) => (e) => {
 		setForm(prev => ({ ...prev, [field]: e.target.value }));
+		// Clear field error on change
+		if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+	};
 
 	const validate = () => {
 		const e = {};
 		if (!form.firstName.trim()) e.firstName = 'First name is required';
-		if (!form.lastName.trim()) e.lastName = 'Last name is required';
-		if (!form.email.trim()) e.email = 'Email is required';
+		if (!form.lastName.trim())  e.lastName  = 'Last name is required';
+		if (!form.email.trim())     e.email     = 'Email is required';
 		else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
 			e.email = 'Invalid email format';
 		if (!form.password) e.password = 'Password is required';
@@ -59,28 +62,48 @@ const CreateEmployee = () => {
 		const e = validate();
 		if (Object.keys(e).length > 0) {
 			setErrors(e);
+			// Build a readable list of what's missing
+			const missing = [];
+			if (e.firstName)   missing.push('first name');
+			if (e.lastName)    missing.push('last name');
+			if (e.email)       missing.push('valid email');
+			if (e.password)    missing.push('password (min 6 chars)');
+			if (e.hireDate)    missing.push('hire date');
+			toast.error(`Please fix: ${missing.join(', ')}`);
 			return;
 		}
+
 		setErrors({});
 		setLoading(true);
 
 		try {
 			const payload = {
-				fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
-				email: form.email.trim(),
-				password: form.password,
+				fullName:    `${form.firstName.trim()} ${form.lastName.trim()}`,
+				email:       form.email.trim(),
+				password:    form.password,
 				phoneNumber: form.phoneNumber.trim(),
-				role: form.role,
-				hireDate: form.hireDate,
+				role:        form.role,
+				hireDate:    form.hireDate,
 			};
 
-			// FIX: was posting to GET_ALL_USERS — now uses the correct CREATE_USER endpoint
 			await axiosInstance.post(API_PATHS.USER.CREATE_USER, payload);
-			toast.success('Employee created successfully!');
+			toast.success(`${payload.fullName} created successfully!`);
 			navigate('/hr/employees');
 		} catch (err) {
-			const msg = err.response?.data?.message ?? 'Failed to create employee. Please try again.';
-			toast.error(msg);
+			const msg = err.response?.data?.message;
+
+			if (msg?.toLowerCase().includes('email') && msg?.toLowerCase().includes('exist')) {
+				toast.error('This email is already registered. Please use a different email.');
+				setErrors(prev => ({ ...prev, email: 'Email already exists' }));
+			} else if (msg?.toLowerCase().includes('email')) {
+				toast.error('Invalid email address.');
+				setErrors(prev => ({ ...prev, email: msg }));
+			} else if (msg?.toLowerCase().includes('password')) {
+				toast.error('Password does not meet requirements.');
+				setErrors(prev => ({ ...prev, password: msg }));
+			} else {
+				toast.error(msg ?? 'Failed to create employee. Please try again.');
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -111,44 +134,44 @@ const CreateEmployee = () => {
 					<div className="space-y-6">
 
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<Field label="First Name" error={errors.firstName}>
+							<Field label="First Name *" error={errors.firstName}>
 								<input
 									type="text"
 									placeholder="John"
 									value={form.firstName}
 									onChange={set('firstName')}
-									className={inputClass(errors.firstName)}
+									className={inputClass(!!errors.firstName)}
 								/>
 							</Field>
-							<Field label="Last Name" error={errors.lastName}>
+							<Field label="Last Name *" error={errors.lastName}>
 								<input
 									type="text"
 									placeholder="Doe"
 									value={form.lastName}
 									onChange={set('lastName')}
-									className={inputClass(errors.lastName)}
+									className={inputClass(!!errors.lastName)}
 								/>
 							</Field>
 						</div>
 
-						<Field label="Email Address" error={errors.email}>
+						<Field label="Email Address *" error={errors.email}>
 							<input
 								type="email"
 								placeholder="john.doe@company.com"
 								value={form.email}
 								onChange={set('email')}
-								className={inputClass(errors.email)}
+								className={inputClass(!!errors.email)}
 							/>
 						</Field>
 
-						<Field label="Password" error={errors.password}>
+						<Field label="Password *" error={errors.password}>
 							<div className="relative">
 								<input
 									type={showPass ? 'text' : 'password'}
-									placeholder="Enter a password"
+									placeholder="Min 6 characters"
 									value={form.password}
 									onChange={set('password')}
-									className={inputClass(errors.password)}
+									className={inputClass(!!errors.password)}
 								/>
 								<button
 									type="button"
@@ -178,7 +201,7 @@ const CreateEmployee = () => {
 								placeholder="+962 7X XXX XXXX"
 								value={form.phoneNumber}
 								onChange={set('phoneNumber')}
-								className={inputClass(errors.phoneNumber)}
+								className={inputClass(!!errors.phoneNumber)}
 							/>
 						</Field>
 
@@ -187,20 +210,20 @@ const CreateEmployee = () => {
 								<select
 									value={form.role}
 									onChange={set('role')}
-									className={inputClass(errors.role)}
+									className={inputClass(!!errors.role)}
 								>
 									<option value="employee">Employee</option>
 									<option value="manager">Manager</option>
 									<option value="hr">HR</option>
 								</select>
 							</Field>
-							<Field label="Hire Date" error={errors.hireDate}>
+							<Field label="Hire Date *" error={errors.hireDate}>
 								<input
 									type="date"
 									max={today}
 									value={form.hireDate}
 									onChange={set('hireDate')}
-									className={inputClass(errors.hireDate)}
+									className={inputClass(!!errors.hireDate)}
 								/>
 							</Field>
 						</div>
@@ -220,7 +243,7 @@ const CreateEmployee = () => {
 						<button
 							onClick={handleSubmit}
 							disabled={loading}
-							className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] disabled:opacity-60 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
+							className="flex items-center gap-2 bg-[#484bf2] hover:bg-[#3a3dd4] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
 						>
 							{loading ? (
 								<>

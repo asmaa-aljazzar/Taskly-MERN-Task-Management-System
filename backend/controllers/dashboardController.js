@@ -13,9 +13,9 @@ const completionRate = (completed, total) =>
 	total > 0 ? Math.round((completed / total) * 100) : 0;
 
 const formatTask = task => ({
-	taskName: task.title,
-	status:   task.status,
-	priority: task.priority,
+	taskName:  task.title,
+	status:    task.status,
+	priority:  task.priority,
 	createdOn: task.createdAt,
 });
 
@@ -104,7 +104,7 @@ const getManagerDashboard = async (req, res) => {
 			success: true,
 			dashboard: {
 				stats: {
-					totalTeams: teams.length,
+					totalTeams:           teams.length,
 					totalProjects,
 					totalTasks,
 					pendingTasks,
@@ -132,9 +132,9 @@ const getHrDashboard = async (req, res) => {
 	try {
 		const [users, teams, projects, tasks] = await Promise.all([
 			User.find({ isDeleted: false }),
-			Team.find({ isDeleted: false }).populate('managerId', 'name email'),
+			Team.find({ isDeleted: false }).populate('managerId', 'fullName email'),
 			Project.find({ isDeleted: false }),
-			Task.find({ isDeleted: false }).populate('assignedTo', 'name email role'),
+			Task.find({ isDeleted: false }).populate('assignedTo', 'fullName email role'),
 		]);
 
 		// ── User stats ───────────────────────────────────────────────────────────
@@ -144,15 +144,15 @@ const getHrDashboard = async (req, res) => {
 		const totalHrs       = users.filter(u => u.role === 'hr').length;
 
 		// ── Team stats ───────────────────────────────────────────────────────────
-		const totalTeams         = teams.length;
-		const teamsWithManagers  = teams.filter(t => t.managerId).length;
+		const totalTeams           = teams.length;
+		const teamsWithManagers    = teams.filter(t => t.managerId).length;
 		const teamsWithoutManagers = totalTeams - teamsWithManagers;
 
 		// ── Project stats ────────────────────────────────────────────────────────
-		const totalProjects      = projects.length;
-		const pendingProjects    = countByStatus(projects, 'pending');
-		const inProgressProjects = countByStatus(projects, 'in-progress');
-		const completedProjects  = countByStatus(projects, 'done');
+		const totalProjects         = projects.length;
+		const pendingProjects       = countByStatus(projects, 'pending');
+		const inProgressProjects    = countByStatus(projects, 'in-progress');
+		const completedProjects     = countByStatus(projects, 'done');
 		const projectCompletionRate = completionRate(completedProjects, totalProjects);
 
 		// ── Task stats ───────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ const getHrDashboard = async (req, res) => {
 			urgent: tasks.filter(t => t.priority === 'urgent').length,
 		};
 
-		// ── Employee workload (no extra DB calls — uses already-fetched data) ────
+		// ── Employee workload ─────────────────────────────────────────────────────
 		const workload = users
 			.filter(u => u.role === 'employee')
 			.map(employee => {
@@ -183,7 +183,6 @@ const getHrDashboard = async (req, res) => {
 				const inProgress = countByStatus(employeeTasks, 'in-progress');
 				const pending    = countByStatus(employeeTasks, 'pending');
 
-				// Find teams the employee belongs to, then match projects
 				const memberTeamIds = teams
 					.filter(t => t.members?.some(m => m.toString() === uid))
 					.map(t => t._id.toString());
@@ -194,7 +193,7 @@ const getHrDashboard = async (req, res) => {
 
 				return {
 					employeeId:    employee._id,
-					employeeName:  employee.name,
+					employeeName:  employee.fullName,
 					employeeEmail: employee.email,
 					stats: {
 						totalTasks:     employeeTasks.length,
@@ -206,14 +205,13 @@ const getHrDashboard = async (req, res) => {
 					activeProjects,
 				};
 			})
-			// Sort by lowest completion rate first (most at-risk employees first)
 			.sort((a, b) => a.stats.completionRate - b.stats.completionRate)
 			.slice(0, 10);
 
-		// ── Recent tasks ─────────────────────────────────────────────────────────
+		// ── Recent tasks ──────────────────────────────────────────────────────────
 		const recentTasks = [...tasks]
 			.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-			.slice(0, 10)
+			.slice(0, 5)
 			.map(task => {
 				const project = projects.find(
 					p => p._id.toString() === task.projectId?.toString()
@@ -223,14 +221,14 @@ const getHrDashboard = async (req, res) => {
 					taskName:    task.title,
 					status:      task.status,
 					priority:    task.priority,
-					assignedTo:  task.assignedTo?.name ?? 'Unassigned',
-					projectName: project?.projectName ?? 'No Project',
+					assignedTo:  task.assignedTo?.fullName ?? 'Unassigned',
+					projectName: project?.projectName      ?? 'No Project',
 					createdOn:   task.createdAt,
 					dueDate:     task.dueDate ?? null,
 				};
 			});
 
-		// ── Response ─────────────────────────────────────────────────────────────
+		// ── Response ──────────────────────────────────────────────────────────────
 		res.status(200).json({
 			success: true,
 			dashboard: {
@@ -257,13 +255,13 @@ const getHrDashboard = async (req, res) => {
 					],
 				},
 				teams: {
-					total:            totalTeams,
-					withManagers:     teamsWithManagers,
-					withoutManagers:  teamsWithoutManagers,
+					total:           totalTeams,
+					withManagers:    teamsWithManagers,
+					withoutManagers: teamsWithoutManagers,
 					list: teams.map(t => ({
 						id:      t._id,
-						name:    t.teamName,
-						manager: t.managerId?.name ?? 'No Manager Assigned',
+						name:    t.name,
+						manager: t.managerId?.fullName ?? 'No Manager Assigned',
 					})),
 				},
 				projects: {

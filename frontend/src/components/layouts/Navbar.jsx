@@ -80,11 +80,6 @@ const Navbar = ({ activeMenuItem }) => {
 			{/* ── Right: notifications + avatar ── */}
 			<div className="flex items-center gap-3">
 
-				{/* Notification bell */}
-				<button className="relative p-2 rounded-lg text-gray-500 hover:text-[#484bf2] hover:bg-blue-50 transition-colors">
-					<HiOutlineBell className="text-xl" />
-				</button>
-
 				{/* Avatar + dropdown */}
 				<div className="relative" ref={dropdownRef}>
 					<button
