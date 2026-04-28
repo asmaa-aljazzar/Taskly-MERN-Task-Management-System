@@ -60,46 +60,36 @@ const ManageProjects = () => {
 	const [search,   setSearch]   = useState('');
 
 	useEffect(() => {
-		(async () => {
-			try {
-				// Fetch projects and the manager's teams in parallel
-				const [projectsRes, teamsRes] = await Promise.all([
-					axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS),
-					axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS),
-				]);
+    (async () => {
+        try {
+            const [projectsRes, teamsRes] = await Promise.all([
+                axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS),
+                axiosInstance.get(API_PATHS.TEAM.GET_MY_TEAMS), // ← changed
+            ]);
 
-				const allProjects = Array.isArray(projectsRes.data)
-					? projectsRes.data
-					: projectsRes.data.projects ?? [];
+            const allProjects = Array.isArray(projectsRes.data)
+                ? projectsRes.data
+                : projectsRes.data.projects ?? [];
 
-				const allTeams = Array.isArray(teamsRes.data)
-					? teamsRes.data
-					: teamsRes.data.teams ?? [];
+            const myTeams = Array.isArray(teamsRes.data)
+                ? teamsRes.data
+                : teamsRes.data.teams ?? [];
 
-				// Keep only teams managed by the current user
-				const myTeamIds = new Set(
-					allTeams
-						.filter(t => {
-							const managerId = t.managerId?._id ?? t.managerId;
-							return managerId?.toString() === user?._id?.toString();
-						})
-						.map(t => t._id?.toString())
-				);
+            const myTeamIds = new Set(myTeams.map(t => t._id?.toString()));
 
-				// Keep only projects whose teamId is one of the manager's teams
-				const myProjects = allProjects.filter(p => {
-					const teamId = p.teamId?._id ?? p.teamId;
-					return myTeamIds.has(teamId?.toString());
-				});
+            const myProjects = allProjects.filter(p => {
+                const teamId = p.teamId?._id ?? p.teamId;
+                return myTeamIds.has(teamId?.toString());
+            });
 
-				setProjects(myProjects);
-			} catch {
-				toast.error('Failed to load projects. Please try again.');
-			} finally {
-				setLoading(false);
-			}
-		})();
-	}, [user]);
+            setProjects(myProjects);
+        } catch {
+            toast.error('Failed to load projects. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    })();
+}, [user]);
 
 	if (loading) return <LoadingSpinner />;
 

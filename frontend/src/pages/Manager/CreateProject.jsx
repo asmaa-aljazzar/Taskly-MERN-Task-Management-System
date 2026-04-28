@@ -36,33 +36,29 @@ const FieldError = ({ message }) =>
 	message ? <p className="mt-1 text-xs text-rose-500">{message}</p> : null;
 
 const CreateProject = () => {
-	const navigate     = useNavigate();
-	const { user }     = useUserAuth();
+	const navigate = useNavigate();
+	const { user } = useUserAuth();
 
 	const [form, setForm] = useState({
 		projectName: '',
 		description: '',
-		teamId:      '',
-		startDate:   '',
-		endDate:     '',
+		teamId: '',
+		startDate: '',
+		endDate: '',
 	});
 
-	const [errors,   setErrors]   = useState({});
-	const [teams,    setTeams]    = useState([]);
-	const [loading,  setLoading]  = useState(false);
+	const [errors, setErrors] = useState({});
+	const [teams, setTeams] = useState([]);
+	const [loading, setLoading] = useState(false);
 	const [fetching, setFetching] = useState(true);
 
 	useEffect(() => {
 		const fetchTeams = async () => {
 			try {
-				const res  = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
-				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
-				const myTeams = list.filter(t => {
-					const managerId = t.managerId?._id ?? t.managerId;
-					return managerId?.toString() === user?._id?.toString();
-				});
-				setTeams(myTeams);
-				if (myTeams.length === 0) {
+				const res = await axiosInstance.get(API_PATHS.TEAM.GET_MY_TEAMS); // ← fixed
+				const mine = res.data.teams ?? [];
+				setTeams(mine);
+				if (mine.length === 0) {
 					toast('You have no teams yet. Create a team first.', { icon: '⚠️' });
 				}
 			} catch {
@@ -73,7 +69,6 @@ const CreateProject = () => {
 		};
 		if (user) fetchTeams();
 	}, [user]);
-
 	const handleChange = (e) => {
 		const { name, value } = e.target;
 		setForm(prev => ({ ...prev, [name]: value }));
@@ -83,7 +78,7 @@ const CreateProject = () => {
 	const validate = () => {
 		const newErrors = {};
 		if (!form.projectName.trim()) newErrors.projectName = 'Project name is required';
-		if (!form.teamId)             newErrors.teamId      = 'Please select a team';
+		if (!form.teamId) newErrors.teamId = 'Please select a team';
 
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -106,54 +101,53 @@ const CreateProject = () => {
 	};
 
 	const handleSubmit = async (e) => {
-		e.preventDefault();
-		const validationErrors = validate();
-		if (Object.keys(validationErrors).length > 0) {
-			setErrors(validationErrors);
-			const missing = [];
-			if (validationErrors.projectName) missing.push('project name');
-			if (validationErrors.teamId)      missing.push('team');
-			if (validationErrors.startDate)   missing.push('valid start date');
-			if (validationErrors.endDate)     missing.push('valid end date');
-			toast.error(`Please provide: ${missing.join(', ')}`);
-			return;
-		}
+    e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        const missing = [];
+        if (validationErrors.projectName) missing.push('project name');
+        if (validationErrors.teamId)      missing.push('team');
+        if (validationErrors.startDate)   missing.push('valid start date');
+        if (validationErrors.endDate)     missing.push('valid end date');
+        toast.error(`Please provide: ${missing.join(', ')}`);
+        return;
+    }
 
-		setLoading(true);
-		try {
-			const payload = {
-				projectName: form.projectName.trim(),
-				teamId:      form.teamId,
-				...(form.description.trim() && { description: form.description.trim() }),
-				...(form.startDate          && { startDate:   form.startDate }),
-				...(form.endDate            && { endDate:     form.endDate }),
-			};
+    setLoading(true);
+    try {
+        const payload = {
+            projectName: form.projectName.trim(),
+            teamId:      form.teamId,
+            ...(form.description.trim() && { description: form.description.trim() }),
+            ...(form.startDate          && { startDate:   form.startDate }),
+            ...(form.endDate            && { endDate:     form.endDate }),
+        };
 
-			const res = await axiosInstance.post(API_PATHS.Project.CREATE_PROJECT, payload);
-
-			if (res.data.success) {
-				toast.success(`"${form.projectName.trim()}" created successfully!`);
-				navigate('/manager/projects');
-			} else {
-				toast.error(res.data.message || 'Failed to create project');
-			}
-		} catch (err) {
-			const msg = err.response?.data?.message;
-			if (msg?.includes('Team Not Found')) {
-				toast.error('Selected team no longer exists. Please choose another.');
-			} else if (msg?.includes('Start date')) {
-				toast.error('Start date cannot be in the past.');
-				setErrors(prev => ({ ...prev, startDate: msg }));
-			} else if (msg?.includes('End date')) {
-				toast.error('End date is invalid.');
-				setErrors(prev => ({ ...prev, endDate: msg }));
-			} else {
-				toast.error(msg || 'Failed to create project. Please try again.');
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
+        const res = await axiosInstance.post(API_PATHS.Project.CREATE_PROJECT, payload); // ← fixed
+        if (res.data.success) {
+            toast.success(`"${form.projectName.trim()}" created successfully!`);
+            navigate('/manager/projects');
+        } else {
+            toast.error(res.data.message || 'Failed to create project');
+        }
+    } catch (err) {
+        const msg = err.response?.data?.message;
+        if (msg?.includes('Team Not Found')) {
+            toast.error('Selected team no longer exists. Please choose another.');
+        } else if (msg?.includes('Start date')) {
+            toast.error('Start date cannot be in the past.');
+            setErrors(prev => ({ ...prev, startDate: msg }));
+        } else if (msg?.includes('End date')) {
+            toast.error('End date is invalid.');
+            setErrors(prev => ({ ...prev, endDate: msg }));
+        } else {
+            toast.error(msg || 'Failed to create project. Please try again.');
+        }
+    } finally {
+        setLoading(false);
+    }
+};
 
 	const todayStr = new Date().toISOString().split('T')[0];
 

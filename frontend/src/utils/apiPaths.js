@@ -29,6 +29,7 @@ export const API_PATHS = {
 		GET_TEAM_BY_ID: (id) => `/api/teams/${id}`,
 		UPDATE_TEAM: (id) => `/api/teams/${id}`,
 		DELETE_TEAM: (id) => `/api/teams/${id}`,
+		GET_MY_TEAMS: "/api/teams/my-teams",
 	},
 	Project: {
 		GET_ALL_PROJECTS: "/api/projects",

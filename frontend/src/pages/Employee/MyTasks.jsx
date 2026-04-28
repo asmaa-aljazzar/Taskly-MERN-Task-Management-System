@@ -58,45 +58,43 @@ const MyTasks = () => {
 	const [search,   setSearch]   = useState('');
 
 	useEffect(() => {
-		(async () => {
-			try {
-				// 1. Get all projects
-				const projRes  = await axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS);
-				const projects = Array.isArray(projRes.data)
-					? projRes.data
-					: projRes.data.projects ?? [];
+    (async () => {
+        try {
+            const projRes  = await axiosInstance.get(API_PATHS.Project.GET_ALL_PROJECTS);
+            const projects = Array.isArray(projRes.data)
+                ? projRes.data
+                : projRes.data.projects ?? [];
 
-				// 2. Fetch tasks for every project in parallel
-				const taskArrays = await Promise.all(
-					projects.map(async (proj) => {
-						try {
-							const res = await axiosInstance.get(API_PATHS.TASK.GET_ALL_TASKS(proj._id));
-							return (res.data.tasks ?? []).map(t => ({
-								...t,
-								projectId:   proj._id,
-								projectName: proj.projectName,
-							}));
-						} catch {
-							return [];
-						}
-					})
-				);
+            const taskArrays = await Promise.all(
+                projects.map(async (proj) => {
+                    try {
+                        const res = await axiosInstance.get(API_PATHS.TASK.GET_ALL_TASKS(proj._id));
+                        return (res.data.tasks ?? []).map(t => ({
+                            ...t,
+                            projectId:   proj._id,
+                            projectName: proj.projectName,
+                        }));
+                    } catch {
+                        return [];
+                    }
+                })
+            );
 
-				// 3. Flatten and keep only tasks assigned to me
-				const myTasks = taskArrays
-					.flat()
-					.filter(t =>
-						(t.assignedTo?._id ?? t.assignedTo) === user?._id
-					);
+            const myTasks = taskArrays
+                .flat()
+                .filter(t => {
+                    const assignedId = t.assignedTo?._id?.toString() ?? t.assignedTo?.toString();
+                    return assignedId === user?._id?.toString(); // ← fixed comparison
+                });
 
-				setTasks(myTasks);
-			} catch {
-				toast.error('Failed to load tasks.');
-			} finally {
-				setLoading(false);
-			}
-		})();
-	}, [user]);
+            setTasks(myTasks);
+        } catch {
+            toast.error('Failed to load tasks.');
+        } finally {
+            setLoading(false);
+        }
+    })();
+}, [user]);
 
 	if (loading) return <LoadingSpinner />;
 

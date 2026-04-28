@@ -1,8 +1,9 @@
-const { createTeam, getAllTeams, getTeamById, deleteTeam, updateTeam } = require("../controllers/teamsController");
-const { protect, hrOnly, hrOrManager } = require("../middlewares/authMiddleware");
+const { createTeam, getAllTeams, getTeamById, deleteTeam, updateTeam, getMyTeams } = require("../controllers/teamsController");
+const { protect, hrOnly, managerOnly, hrOrManager } = require("../middlewares/authMiddleware");
 const express = require ('express');
 const router = express.Router ();
 
+router.get("/my-teams", protect, managerOnly, getMyTeams);
 router.get ("/", protect, hrOrManager, getAllTeams);
 router.get ("/:id", protect, hrOrManager, getTeamById);
 

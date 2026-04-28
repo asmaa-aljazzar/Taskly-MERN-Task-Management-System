@@ -59,8 +59,8 @@ const TeamCard = ({ team, isSelected, onClick }) => (
 	<button
 		onClick={onClick}
 		className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
-				? 'border-[#484bf2] bg-[#484bf2]/5 shadow-sm'
-				: 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+			? 'border-[#484bf2] bg-[#484bf2]/5 shadow-sm'
+			: 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
 			}`}
 	>
 		<div className="flex items-start justify-between gap-2 mb-3">
@@ -155,10 +155,9 @@ const ManagerTeams = () => {
 	useEffect(() => {
 		(async () => {
 			try {
-				const res = await axiosInstance.get(API_PATHS.TEAM.GET_ALL_TEAMS);
-				const list = Array.isArray(res.data) ? res.data : res.data.teams ?? [];
-				const mine = list.filter(t => t.managerId?._id === user?._id || t.managerId === user?._id);
-				setTeams(mine);
+				const res = await axiosInstance.get(API_PATHS.TEAM.GET_MY_TEAMS);
+				const mine = res.data.teams ?? [];
+				setTeams(mine); 
 				if (mine.length > 0) selectTeam(mine[0]);
 			} catch {
 				toast.error('Failed to load teams.');
@@ -259,8 +258,8 @@ const ManagerTeams = () => {
 												key={tab}
 												onClick={() => setActiveTab(tab)}
 												className={`px-4 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${activeTab === tab
-														? 'bg-white text-[#484bf2] shadow-sm'
-														: 'text-gray-500 hover:text-gray-700'
+													? 'bg-white text-[#484bf2] shadow-sm'
+													: 'text-gray-500 hover:text-gray-700'
 													}`}
 											>
 												{tab}

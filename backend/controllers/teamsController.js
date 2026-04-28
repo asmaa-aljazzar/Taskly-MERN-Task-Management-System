@@ -317,5 +317,23 @@ const deleteTeam = async (req, res) => {
 		catchError(err, res);
 	}
 };
+// teamsController.js
+const getMyTeams = async (req, res) => {
+  try {
+    const teams = await Team.find({
+      managerId: req.user.id,
+      isDeleted: false,
+    })
+      .populate('managerId', 'fullName email')
+      .populate('members', 'fullName email');
 
-module.exports = { createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam };
+    return res.status(200).json({
+      success: true,
+      teams,
+    });
+  } catch (err) {
+    catchError(err, res);
+  }
+};
+
+module.exports = { createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, getMyTeams };
