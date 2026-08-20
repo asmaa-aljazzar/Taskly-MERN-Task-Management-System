@@ -238,8 +238,19 @@ npm run seed
 
 The default dataset contains 1 HR account, 5 managers, 50 employees, 10 teams,
 40 projects, and 800 tasks. All demo accounts use the password `Taskly@123`.
-The main logins are `hr@seed.taskly.local`, `manager1@seed.taskly.local`, and
-`employee1@seed.taskly.local`.
+
+### Demo accounts
+
+Use these pre-seeded accounts to explore each role:
+
+| Role | Email | Password |
+|------|-------|----------|
+| HR | `hr@seed.taskly.local` | `Taskly@123` |
+| Manager | `manager1@seed.taskly.local` | `Taskly@123` |
+| Employee | `employee1@seed.taskly.local` | `Taskly@123` |
+
+> These credentials are intended for local development and demonstration only.
+> Never use them in production.
 
 To replace an earlier demo dataset without touching accounts created through the app:
 
@@ -256,8 +267,6 @@ SEED_PASSWORD='YourStrongPassword@123' npm run seed:reset -- --managers=10 --emp
 Do not run the seed command automatically when the production server starts. Run it
 once against the intended database, then remove `SEED_PASSWORD` from the hosting
 environment if you set it there.
-
-Use any of the listed demo email addresses and the demo password to sign in.
 
 ## 🏃 Running the Application
 
