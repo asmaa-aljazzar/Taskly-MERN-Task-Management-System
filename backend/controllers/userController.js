@@ -8,7 +8,6 @@ const {
 	sanitizeText,
 	sanitizePhone
 } = require('../utils/validation');
-const { verify } = require('jsonwebtoken');
 const Team = require('../models/Team');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
@@ -17,6 +16,9 @@ const MAX_HIRE_DATE_YEARS_AGO = 50;
 
 // Helper: validates that a hire date is not in the future and not beyond the max past range
 const validateHireDate = (hireDate) => {
+	if (!(hireDate instanceof Date) || Number.isNaN(hireDate.getTime()))
+		return { valid: false, message: "Invalid hire date" };
+
 	const now = new Date();
 	const minHireDate = new Date();
 	minHireDate.setFullYear(now.getFullYear() - MAX_HIRE_DATE_YEARS_AGO);
@@ -52,9 +54,18 @@ const createUser = async (req, res) => {
 			fullName = sanitizeText(fullName);
 			phoneNumber = sanitizePhone(phoneNumber);
 
+			if (!fullName)
+				return res.status(400).json({ message: "Full name is required" });
+
 			if (email && !validateEmail(email)) {
 				return res.status(400).json({
 					message: "Invalid email format"
+				});
+			}
+
+			if (!validatePassword(password)) {
+				return res.status(400).json({
+					message: "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character"
 				});
 			}
 

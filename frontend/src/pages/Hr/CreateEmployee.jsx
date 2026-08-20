@@ -50,8 +50,8 @@ const CreateEmployee = () => {
 		else if (!/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(form.email))
 			e.email = 'Invalid email format';
 		if (!form.password) e.password = 'Password is required';
-		else if (form.password.length < 6)
-			e.password = 'Password must be at least 6 characters';
+		else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#])[A-Za-z\d@$!%*?&.#]{8,}$/.test(form.password))
+			e.password = 'Min 8 chars, uppercase, lowercase, number & special character';
 		if (!form.hireDate) e.hireDate = 'Hire date is required';
 		else if (new Date(form.hireDate) > new Date())
 			e.hireDate = "Hire date can't be in the future";
@@ -67,7 +67,7 @@ const CreateEmployee = () => {
 			if (e.firstName)   missing.push('first name');
 			if (e.lastName)    missing.push('last name');
 			if (e.email)       missing.push('valid email');
-			if (e.password)    missing.push('password (min 6 chars)');
+			if (e.password)    missing.push('a valid password');
 			if (e.hireDate)    missing.push('hire date');
 			toast.error(`Please fix: ${missing.join(', ')}`);
 			return;

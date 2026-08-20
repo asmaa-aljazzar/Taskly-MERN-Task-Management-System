@@ -4,59 +4,8 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
-
-const StatusBadge = ({ status }) => {
-	const styles = {
-		done: 'bg-emerald-100 text-emerald-700',
-		'in-progress': 'bg-amber-100   text-amber-700',
-		pending: 'bg-rose-100    text-rose-700',
-	};
-	const labels = { done: 'Done', 'in-progress': 'In Progress', pending: 'Pending' };
-	return (
-		<span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${styles[status] ?? 'bg-gray-100 text-gray-600'}`}>
-			{labels[status] ?? status}
-		</span>
-	);
-};
-
-const PriorityBadge = ({ priority }) => {
-	const styles = {
-		urgent: 'bg-purple-100 text-purple-700',
-		high: 'bg-rose-100   text-rose-700',
-		medium: 'bg-amber-100  text-amber-700',
-		low: 'bg-emerald-100 text-emerald-700',
-	};
-	return (
-		<span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${styles[priority] ?? 'bg-gray-100 text-gray-600'}`}>
-			{priority}
-		</span>
-	);
-};
-
-const InfoRow = ({ label, value }) => (
-	<div className="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0">
-		<span className="text-sm text-gray-500">{label}</span>
-		<span className="text-sm font-medium text-gray-800">{value ?? '—'}</span>
-	</div>
-);
-
-const Th = ({ children }) => (
-	<th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-		{children}
-	</th>
-);
-
-const Td = ({ children, className = '' }) => (
-	<td className={`px-4 py-3 text-sm text-gray-700 ${className}`}>{children}</td>
-);
-
-const LoadingSpinner = () => (
-	<DashboardLayout activeMenuItem="Projects">
-		<div className="flex justify-center items-center h-96">
-			<div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#484bf2]" />
-		</div>
-	</DashboardLayout>
-);
+import { PriorityBadge, StatusBadge } from '../../components/ui/Badges';
+import { DashboardLoading, InfoRow, TableCell as Td, TableHeader as Th } from '../../components/ui/Display';
 
 const ProjectDetails = () => {
 	const navigate = useNavigate();
@@ -105,7 +54,7 @@ const ProjectDetails = () => {
 		}
 	};
 
-	if (fetching) return <LoadingSpinner />;
+	if (fetching) return <DashboardLoading activeMenuItem="Projects" />;
 	if (!project) return null;
 
 	const fmt = (d) => d ? new Date(d).toLocaleDateString() : null;

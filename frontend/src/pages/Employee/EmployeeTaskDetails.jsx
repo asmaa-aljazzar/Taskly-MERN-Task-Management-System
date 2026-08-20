@@ -4,50 +4,16 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import { PriorityBadge, StatusBadge } from '../../components/ui/Badges';
+import { DashboardLoading } from '../../components/ui/Display';
 
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
-
-const PriorityBadge = ({ priority }) => {
-	const map = {
-		urgent: 'bg-purple-100 text-purple-700',
-		high:   'bg-rose-100 text-rose-700',
-		medium: 'bg-amber-100 text-amber-700',
-		low:    'bg-emerald-100 text-emerald-700',
-	};
-	return (
-		<span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${map[priority] ?? 'bg-gray-100 text-gray-600'}`}>
-			{priority}
-		</span>
-	);
-};
-
-const StatusBadge = ({ status }) => {
-	const map = {
-		done:          'bg-emerald-100 text-emerald-700',
-		'in-progress': 'bg-amber-100 text-amber-700',
-		pending:       'bg-rose-100 text-rose-700',
-	};
-	const labels = { done: 'Done', 'in-progress': 'In Progress', pending: 'Pending' };
-	return (
-		<span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
-			{labels[status] ?? status}
-		</span>
-	);
-};
 
 const InfoRow = ({ label, value }) => (
 	<div className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0">
 		<span className="text-sm text-gray-500">{label}</span>
 		<span className="text-sm font-medium text-gray-800">{value ?? '—'}</span>
 	</div>
-);
-
-const LoadingSpinner = () => (
-	<DashboardLayout activeMenuItem="My Tasks">
-		<div className="flex justify-center items-center h-96">
-			<div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#484bf2]" />
-		</div>
-	</DashboardLayout>
 );
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -131,7 +97,7 @@ const EmployeeTaskDetails = () => {
 		}
 	};
 
-	if (!task) return <LoadingSpinner />;
+	if (!task) return <DashboardLoading activeMenuItem="My Tasks" />;
 
 	const fmt        = (d) => d ? new Date(d).toLocaleDateString() : null;
 	const checkDone  = checklist.filter(c => c.completed).length;

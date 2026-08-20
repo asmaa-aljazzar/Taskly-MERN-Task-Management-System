@@ -19,8 +19,9 @@ const protect = async (req, res, next) => {
 		//? The Bearer prefix:
 		//* is added by the frontend when sending the token to the backend.
 		//* It's not automatically added by Express or any middleware.
-		if (token && token.startsWith("Bearer")) {
-			token = token.split(" ")[1]; // "0[Bearer] 1[token]"
+		if (token && token.startsWith("Bearer ")) {
+			token = token.slice(7).trim();
+			if (!token) return res.status(401).json({ message: "Unauthorized, token missing" });
 			const decoded = jwt.verify(token, process.env.JWT_SECRET);
 			// Add req.user to the request object
 			// Remove Password from user object
@@ -30,10 +31,10 @@ const protect = async (req, res, next) => {
 			next();
 		}
 		else {
-			res.status(401).json({ message: "Unauthorized, not token" });
+			res.status(401).json({ message: "Unauthorized, token missing" });
 		}
 	} catch (err) {
-		res.status(401).json({ message: "Token faild", err: err.message });
+		res.status(401).json({ message: "Invalid or expired token" });
 		// catchError(err, res);
 	}
 }
@@ -42,7 +43,7 @@ const protect = async (req, res, next) => {
 // Middleware for HR: HR Permissions
 const hrOnly = async (req, res, next) => {
 	try {
-		if (req.user && req.user.role == "hr") {
+		if (req.user && req.user.role === "hr") {
 			next();
 		} else {
 			return res.status(403).json({ message: "Access denied. HR only." });
@@ -56,7 +57,7 @@ const hrOnly = async (req, res, next) => {
 // Middleware for Manager: Manager Permissions
 const managerOnly = async (req, res, next) => {
 	try {
-		if (req.user && req.user.role == "manager") {
+		if (req.user && req.user.role === "manager") {
 			next();
 		} else {
 			return res.status(403).json({ message: "Access denied. Manager only." });
@@ -69,7 +70,7 @@ const managerOnly = async (req, res, next) => {
 
 const hrOrManager = async (req, res, next) => {
 	try {
-		if (req.user && (req.user.role == "hr" || req.user.role == "manager")) {
+		if (req.user && (req.user.role === "hr" || req.user.role === "manager")) {
 			next();
 		} else {
 			return res.status(403).json({ message: "Access denied. HR or Manager only." });
@@ -82,10 +83,10 @@ const hrOrManager = async (req, res, next) => {
 // Middleware for Employee
 const employeeOnly = async (req, res, next) => {
 	try {
-		if (req.user && req.user.role == "employee") {
+		if (req.user && req.user.role === "employee") {
 			next();
 		} else {
-			return res.status(403).json({ message: "Access denied. Manager only." });
+			return res.status(403).json({ message: "Access denied. Employee only." });
 		}
 	} catch (err) {
 		// res.status(403).json({ message: "Access denied, manager only", });
@@ -95,7 +96,7 @@ const employeeOnly = async (req, res, next) => {
 
 const managerOrEmployee = async (req, res, next) => {
 	try {
-		if (req.user && (req.user.role == "manager" || req.user.role == "employee")) {
+		if (req.user && (req.user.role === "manager" || req.user.role === "employee")) {
 			next();
 		} else {
 			return res.status(403).json({ message: "Access denied. Manager or Employee only." });

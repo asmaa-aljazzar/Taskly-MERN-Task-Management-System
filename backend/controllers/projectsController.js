@@ -5,6 +5,21 @@ const User = require('../models/User')
 const catchError = require('../utils/catchError');
 const { sanitizeText } = require('../utils/validation');
 
+const canAccessProject = async (user, project) => {
+	const teamId = project.teamId?._id || project.teamId;
+	const team = await Team.findOne({ _id: teamId, isDeleted: false });
+	if (!team) return false;
+
+	if (user.role === 'manager') {
+		return team.managerId.toString() === user._id.toString();
+	}
+
+	return team.members.some(member => member.toString() === user._id.toString());
+};
+
+const canManageTeam = (user, team) =>
+	team.managerId.toString() === user._id.toString();
+
 //*======================== [PROJECTS] ======================
 
 // 1. Create new project (Manager only)
@@ -34,6 +49,13 @@ const createProject = async (req, res) => {
 					success: false,
 					message: "Team Not Found"
 				});
+
+			if (!canManageTeam(req.user, team)) {
+				return res.status(403).json({
+					success: false,
+					message: "You can only create projects for teams you manage"
+				});
+			}
 
 			const today = new Date();
 			today.setHours(0, 0, 0, 0);
@@ -120,12 +142,18 @@ const getAllProjects = async (req, res) => {
 		const limit = parseInt(req.query.limit) || 10;
 		const skip = (page - 1) * limit;
 
-		const projects = await Project.find({ isDeleted: false })
+		const teamFilter = req.user.role === 'manager'
+			? { managerId: req.user._id, isDeleted: false }
+			: { members: req.user._id, isDeleted: false };
+		const accessibleTeamIds = await Team.find(teamFilter).distinct('_id');
+		const projectFilter = { teamId: { $in: accessibleTeamIds }, isDeleted: false };
+
+		const projects = await Project.find(projectFilter)
 			.populate('teamId', 'name _id')
 			.skip(skip)
 			.limit(limit);
 
-		const totalProjects = await Project.countDocuments({ isDeleted: false });
+		const totalProjects = await Project.countDocuments(projectFilter);
 		const totalPages = Math.ceil(totalProjects / limit);
 
 		if (projects.length == 0)
@@ -176,6 +204,9 @@ const getProjectById = async (req, res) => {
 				project: null,
 			});
 
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
 		return res.status(200).json({
 			success: true,
 			message: "Project Found",
@@ -199,6 +230,9 @@ const updateProject = async (req, res) => {
 				message: "Project Not Found",
 			});
 		}
+
+		if (!await canAccessProject(req.user, targetProject))
+			return res.status(403).json({ success: false, message: "Access denied" });
 
 		let {
 			projectName,
@@ -224,6 +258,8 @@ const updateProject = async (req, res) => {
 					message: "Team Not Found",
 				});
 			}
+			if (!canManageTeam(req.user, team))
+				return res.status(403).json({ success: false, message: "You can only use teams you manage" });
 		}
 
 		if (status && !["pending", "in-progress", "done"].includes(status)) {
@@ -305,6 +341,9 @@ const deleteProject = async (req, res) => {
 				message: "Project not found or already deleted"
 			});
 
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
 		// 1. Soft-delete all tasks inside this project
 		await Task.updateMany(
 			{ projectId: _id, isDeleted: false },
@@ -342,12 +381,15 @@ const createTask = async (req, res) => {
 			isDeleted: false,
 		});
 
-		if (!project) {
-			return res.status(404).json({
-				success: false,
-				message: "Project Not Found"
-			});
-		};
+			if (!project) {
+				return res.status(404).json({
+					success: false,
+					message: "Project Not Found"
+				});
+			};
+
+			if (!await canAccessProject(req.user, project))
+				return res.status(403).json({ success: false, message: "Access denied" });
 
 		const taskBody = req.body;
 
@@ -523,10 +565,16 @@ const getAllTasks = async (req, res) => {
 			});
 		}
 
-		const tasks = await Task.find({
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
+		const taskFilter = {
 			projectId: projectId,
-			isDeleted: false
-		})
+			isDeleted: false,
+			...(req.user.role === 'employee' ? { assignedTo: req.user._id } : {}),
+		};
+
+		const tasks = await Task.find(taskFilter)
 			.populate({
 				path: 'projectId',
 				select: 'projectName teamId',
@@ -539,10 +587,7 @@ const getAllTasks = async (req, res) => {
 			.skip(skip)
 			.limit(limit);
 
-		const totalTasks = await Task.countDocuments({
-			projectId: projectId,
-			isDeleted: false
-		});
+		const totalTasks = await Task.countDocuments(taskFilter);
 
 		const totalPages = Math.ceil(totalTasks / limit);
 
@@ -595,16 +640,22 @@ const getTaskById = async (req, res) => {
 				message: "Project Not Found"
 			});
 
-		const task = await Task.findById(taskId)
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
+		const task = await Task.findOne({ _id: taskId, projectId, isDeleted: false })
 			.populate('projectId', 'projectName _id')
 			.populate('assignedTo', 'fullName _id')
 
-		if (!task || task.isDeleted)
-			return res.status(404).json({
-				success: false,
-				message: `Task Not Found`,
-				task: null,
-			});
+		if (!task)
+				return res.status(404).json({
+					success: false,
+					message: `Task Not Found`,
+					task: null,
+				});
+
+		if (req.user.role === 'employee' && task.assignedTo?._id.toString() !== req.user._id.toString())
+			return res.status(403).json({ success: false, message: "Access denied" });
 
 		return res.status(200).json({
 			success: true,
@@ -631,7 +682,10 @@ const updateTask = async (req, res) => {
 			});
 		}
 
-		const targetTask = await Task.findById(taskId);
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
+		const targetTask = await Task.findOne({ _id: taskId, projectId });
 
 		if (!targetTask || targetTask.isDeleted) {
 			return res.status(404).json({
@@ -783,13 +837,16 @@ const deleteTask = async (req, res) => {
 		const { projectId, taskId } = req.params;
 
 		const project = await Project.findById(projectId);
-		const task = await Task.findById(taskId);
+		const task = await Task.findOne({ _id: taskId, projectId });
 
 		if (!project || project.isDeleted)
 			return res.status(404).json({
 				success: false,
 				message: "Project not found or already deleted"
 			});
+
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
 
 		if (!task || task.isDeleted)
 			return res.status(404).json({
@@ -825,7 +882,10 @@ const updateTaskProgress = async (req, res) => {
 		if (!project || project.isDeleted)
 			return res.status(404).json({ success: false, message: "Project Not Found" });
 
-		const task = await Task.findById(taskId);
+		if (!await canAccessProject(req.user, project))
+			return res.status(403).json({ success: false, message: "Access denied" });
+
+		const task = await Task.findOne({ _id: taskId, projectId });
 		if (!task || task.isDeleted)
 			return res.status(404).json({ success: false, message: "Task Not Found" });
 

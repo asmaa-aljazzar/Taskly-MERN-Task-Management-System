@@ -1,17 +1,10 @@
-//todo ======================== TODOs ========================
-//* import { Navigate } from "react-router-dom";
-//* <Route path="/" element={<Navigate to="/login" replace />} />
-//* 4. Ensure that any component with nested routes includes <Outlet />
-//    so that child routes render correctly
-
 import React from 'react'
 import {
-	BrowserRouter as Router,
-	Routes,
-	Route,
-	Navigate,
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
 } from 'react-router-dom';
-
 import PublicRoute from './routes/PublicRoute';
 import PrivateRoute from './routes/PrivateRoute';
 import UserProvider from './context/UserProvider';
@@ -23,7 +16,6 @@ import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import Profile from './pages/Shared/Profile';
-// import Logout from './pages/Auth/Logout';
 
 // HR Pages
 import HrDashboard from './pages/Hr/HrDashboard';
@@ -52,215 +44,87 @@ import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
 import MyTasks from './pages/Employee/MyTasks';
 import EmployeeTaskDetails from './pages/Employee/EmployeeTaskDetails';
 
+// A helper component that decides where to send the user when they go to '/'.
 const Root = () => {
-	const { user, loading } = React.useContext(UserContext);
+    const { user, loading } = React.useContext(UserContext);
 
-	if (loading) return <div>Loading...</div>;
+    if (loading) return <div>Loading...</div>;
 
-	if (!user) {
-		return <Navigate to="/login" replace />;
-	}
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
 
-	// Redirect based on role
-	if (user.role === 'hr') {
-		return <Navigate to="/hr/dashboard" replace />;
-	}
-	if (user.role === 'manager') {
-		return <Navigate to="/manager/dashboard" replace />;
-	}
-	if (user.role === 'employee') {
-		return <Navigate to="/employee/dashboard" replace />;
-	}
+    // Redirect based on role
+    if (user.role === 'hr') {
+        return <Navigate to="/hr/dashboard" replace />;
+    }
+    if (user.role === 'manager') {
+        return <Navigate to="/manager/dashboard" replace />;
+    }
+    if (user.role === 'employee') {
+        return <Navigate to="/employee/dashboard" replace />;
+    }
 
-	// Fallback
-	return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />;
 };
 
 const App = () => {
-	return (
-		<>
-			<UserProvider>
-				<Toaster position="top-center" />
-				<Router>
-					<Routes>
-						{/* ===== Public Routes ===== */}
-						<Route element={<PublicRoute />}>
-							<Route path='/login' element={<Login />} />
-							<Route path='/forgot-password' element={<ForgotPassword />} />
-							<Route path='/reset-password/:token' element={<ResetPassword />} />
-						</Route>
+    return (
+        <UserProvider>
+            <Toaster position="top-center" />
+            <Router>
+                <Routes>
+                    {/* ===== Public Routes ===== */}
+                    <Route element={<PublicRoute />}>
+                        <Route path='/login' element={<Login />} />
+                        <Route path='/forgot-password' element={<ForgotPassword />} />
+                        <Route path='/reset-password/:token' element={<ResetPassword />} />
+                    </Route>
 
+                    {/* ===== HR Routes ===== */}
+                    <Route element={<PrivateRoute allowedRoles={['hr']} />}>
+                        <Route path='/hr/dashboard' element={<HrDashboard />} />
+                        <Route path='/hr/employees' element={<ManageUsers />} />
+                        <Route path='/hr/employees/create' element={<CreateEmployee />} />
+                        <Route path='/hr/employees/edit/:id' element={<EditEmployee />} />
+                        <Route path='/hr/teams' element={<ManageTeams />} />
+                        <Route path='/hr/teams/create' element={<CreateTeam />} />
+                        <Route path='/hr/teams/edit/:id' element={<EditTeam />} />
+                        <Route path="/hr/teams/:id" element={<TeamDetails />} />
+                        <Route path='/hr/profile' element={<Profile />} />
+                    </Route>
 
+                    {/* ===== Manager Routes ===== */}
+                    <Route element={<PrivateRoute allowedRoles={['manager']} />}>
+                        <Route path='/manager/dashboard' element={<ManagerDashboard />} />
+                        <Route path='/manager/teams' element={<ManagerTeams />} />
+                        <Route path='/manager/projects' element={<ManageProjects />} />
+                        <Route path='/manager/projects/create' element={<CreateProject />} />
+                        <Route path='/manager/projects/edit/:id' element={<EditProject />} />
+                        <Route path='/manager/projects/:id' element={<ProjectDetails />} />
+                        <Route path='/manager/projects/:id/tasks/create' element={<CreateTask />} />
+                        <Route path="/manager/projects/:id/tasks/:taskId" element={<TaskDetails />} />
+                        <Route path='/manager/projects/:id/tasks/:taskId/edit' element={<EditTask />} />
+                        <Route path='/manager/profile' element={<Profile />} />
+                    </Route>
 
-						{/* <Route path='/logout' element={<Logout />} /> */}
+                    {/* ===== Employee Routes ===== */}
+                    <Route element={<PrivateRoute allowedRoles={['employee']} />}>
+                        <Route path='/employee/dashboard' element={<EmployeeDashboard />} />
+                        <Route path='/employee/tasks' element={<MyTasks />} />
+                        <Route path='/employee/tasks/:taskId' element={<EmployeeTaskDetails />} />
+                        <Route path='/employee/profile' element={<Profile />} />
+                    </Route>
 
-						{/* ===== HR Routes ===== */}
-						<Route element={<PrivateRoute allowedRoles={['hr']} />}>
-							<Route path='/hr/dashboard' element={<HrDashboard />} />
-							<Route path='/hr/employees' element={<ManageUsers />} />
-							<Route path='/hr/employees/create' element={<CreateEmployee />} />
-							<Route path='/hr/employees/edit/:id' element={<EditEmployee />} />
-							<Route path='/hr/teams' element={<ManageTeams />} />
-							<Route path='/hr/teams/create' element={<CreateTeam />} />
-							<Route path='/hr/teams/edit/:id' element={<EditTeam />} />
-							<Route path="/hr/teams/:id" element={<TeamDetails />} />
-							<Route element={<PrivateRoute allowedRoles={['hr']} />}>
-								<Route path='/hr/profile' element={<Profile />} />
-							</Route>
-						</Route>
+                    {/* ===== Root Route ===== */}
+                    <Route path='/' element={<Root />} />
 
-						{/* ===== Manager Routes ===== */}
-						<Route element={<PrivateRoute allowedRoles={['manager']} />}>
-							<Route path='/manager/dashboard' element={<ManagerDashboard />} />
-							<Route path='/manager/teams' element={<ManagerTeams />} />
-							<Route path='/manager/projects' element={<ManageProjects />} />
-							<Route path='/manager/projects/create' element={<CreateProject />} />
-							<Route path='/manager/projects/edit/:id' element={<EditProject />} />
-							<Route path='/manager/projects/:id' element={<ProjectDetails />} />
-							<Route path='/manager/projects/:id/tasks/create' element={<CreateTask />} />
-							<Route path="/manager/projects/:id/tasks/:taskId" element={<TaskDetails />} />
-							<Route path='/manager/projects/:id/tasks/:taskId/edit' element={<EditTask />} />
-							<Route element={<PrivateRoute allowedRoles={['manager']} />}>
-								<Route path='/manager/profile' element={<Profile />} />
-							</Route>
-						</Route>
-
-						{/* ===== Employee Routes ===== */}
-						<Route element={<PrivateRoute allowedRoles={['employee']} />}>
-							<Route path='/employee/dashboard' element={<EmployeeDashboard />} />
-							<Route path='/employee/tasks' element={<MyTasks />} />
-							<Route path='/employee/tasks/:taskId' element={<EmployeeTaskDetails />} />
-							<Route element={<PrivateRoute allowedRoles={['employee']} />}>
-								<Route path='/employee/profile' element={<Profile />} />
-							</Route>
-						</Route>
-
-						{/* ===== Root Route ===== */}
-						<Route path='/' element={<Root />} />
-
-						{/* ===== Catch All - 404 ===== */}
-						<Route path='*' element={<Navigate to="/login" replace />} />
-					</Routes>
-				</Router>
-			</UserProvider>
-		</>
-	);
+                    {/* ===== Catch All - 404 ===== */}
+                    <Route path='*' element={<Navigate to="/login" replace />} />
+                </Routes>
+            </Router>
+        </UserProvider>
+    );
 };
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// //todo ======================== TODOs ========================
-// //* import { Navigate } from "react-router-dom";
-// //* <Route path="/" element={<Navigate to="/login" replace />} />
-// //* 4. Ensure that any component with nested routes includes <Outlet />
-
-// //    so that child routes render correctly
-// import React from 'react'
-// import {
-// 	BrowserRouter as Router, // Controlls the entire routing system. <Router> ... </Router>.
-// 	Routes, // Container for all routes. <Routes> ... </Routes>.
-// 	Route,// Define a single path - Component mapping.
-// 	Navigate,
-// 	Outlet,
-// } from 'react-router-dom';
-
-// import PrivateRoute from './routes/PrivateRoute';
-// import Home from './pages/Shared/Home';
-// import Login from './pages/Auth/Login';
-// import ForgotPassword from './pages/Auth/ForgotPassword';
-// import ResetPassword from './pages/Auth/ResetPassword';
-// import HrDashboard from './pages/Hr/HrDashboard';
-// import ManageUsers from './pages/Hr/ManageUsers';
-// import ManageTeams from './pages/Hr/ManageTeams';
-// import ManagerDashboard from './pages/Manager/ManagerDashboard';
-// import { UserContext } from './context/UserContext';
-// import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
-// import UserProvider from './context/UserProvider';
-// import { Toaster } from 'react-hot-toast';
-
-// // import HrRoutes from './routes/HrRoutes';
-// // import ManagerRoutes from './routes/ManagerRoutes';
-// // import EmployeeRoutes from './routes/EmployeeRoutes';
-
-// const App = () => {
-// 	return (
-// 		<>
-// 		<Toaster position="top-center"/>
-// 			<UserProvider>
-// 				<Router>
-// 					{/* Route Can not be outside Routes. */}
-// 					<Routes>
-// 						{/* Global Routes */}
-// 						<Route path='/login' element={<Login />} />
-// 						<Route path='/forgot-password' element={<ForgotPassword />} />
-// 						<Route path='/reset-password/:token' element={<ResetPassword />} />
-
-// 						{/* Hr */}
-// 						<Route element={<PrivateRoute allowedRoles={['hr']} />}>
-// 							{/* <Route path='hr/*' element={ <HrRoutes /> } /> */}
-// 							<Route path='/hr/dashboard' element={<HrDashboard />} />
-// 							<Route path='/hr/users' element={<ManageUsers />} />
-// 							<Route path='/hr/teams' element={<ManageTeams />} />
-// 						</Route>
-
-// 						{/* Manager */}
-// 						<Route element={<PrivateRoute allowedRoles={['manager']} />} >
-// 							<Route path='/manager/dashboard' element={<ManagerDashboard />} />
-// 							{/* <Route path='manager/*' element={ <ManagerRoutes /> } /> */}
-// 						</Route>
-
-// 						{/* Employee */}
-// 						<Route element={<PrivateRoute allowedRoles={['employee']} />}>
-// 							<Route path='/employee/dashboard' element={<EmployeeDashboard />} />
-// 							{/* <Route path='employee/*' element={ <EmployeeRoutes /> } /> */}
-// 						</Route>
-// 						{/* Default Route */}
-// 						<Route path='/' element={<Root />} />
-// 					</Routes>
-// 				</Router>
-// 			</UserProvider>
-
-// 		</>
-// 	)
-// }
-
-// export default App;
-
-// const Root = () => {
-// 	const { user, loading } = React.useContext(UserContext);
-
-// 	if (loading) return <div>Loading...</div>;
-// 	console.log('Root user => ', user);
-// 	if (!user) {
-// 		return <Navigate to="/login" />;
-// 	}
-
-// 	// Redirect based on role
-// 	if (user.role === 'hr') {
-// 		return <Navigate to="/hr/dashboard" replace />;
-// 	}
-// 	if (user.role === 'manager') {
-// 		return <Navigate to="/manager/dashboard" replace />;
-// 	}
-// 	if (user.role === 'employee') {
-// 		return <Navigate to="/employee/dashboard" replace />;
-// 	}
-
-// 	// Fallback
-// 	return <Navigate to="/login" replace />;
-// }

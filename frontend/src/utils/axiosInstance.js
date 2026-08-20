@@ -54,6 +54,8 @@ axiosInstance.interceptors.response.use(
 			if (error.response.status === 401 && !isLoginRequest) {
 				// Only redirect for NON-login 401 errors
 				localStorage.removeItem('token');
+				localStorage.removeItem('role');
+				localStorage.removeItem('user');
 				window.location.href = '/login';
 			} else if (error.response.status === 500) {
 				console.error("Server error. Please try again later.");
@@ -66,7 +68,6 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-
 
 
 

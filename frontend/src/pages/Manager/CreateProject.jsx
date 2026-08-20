@@ -5,35 +5,7 @@ import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { useUserAuth } from '../../hooks/useUserAuth';
-
-const Label = ({ children, required }) => (
-	<label className="block text-sm font-medium text-gray-700 mb-1.5">
-		{children} {required && <span className="text-rose-500">*</span>}
-	</label>
-);
-
-const Input = ({ ...props }) => (
-	<input {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400"
-	/>
-);
-
-const Textarea = ({ ...props }) => (
-	<textarea {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400 resize-none"
-	/>
-);
-
-const Select = ({ children, ...props }) => (
-	<select {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors bg-white text-gray-700"
-	>
-		{children}
-	</select>
-);
-
-const FieldError = ({ message }) =>
-	message ? <p className="mt-1 text-xs text-rose-500">{message}</p> : null;
+import { FieldError, FieldLabel as Label, FormInput as Input, FormSelect as Select, FormTextarea as Textarea } from '../../components/ui/FormControls';
 
 const CreateProject = () => {
 	const navigate = useNavigate();

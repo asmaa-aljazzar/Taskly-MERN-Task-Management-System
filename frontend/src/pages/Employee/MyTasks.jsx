@@ -5,44 +5,11 @@ import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { UserContext } from '../../context/UserContext';
+import { PriorityBadge, StatusBadge } from '../../components/ui/Badges';
+import { DashboardLoading } from '../../components/ui/Display';
 
 // ─── Shared UI ─────────────────────────────────────────────────────────────────
 
-const StatusBadge = ({ status }) => {
-	const map = {
-		done:          'bg-emerald-100 text-emerald-700',
-		'in-progress': 'bg-amber-100 text-amber-700',
-		pending:       'bg-rose-100 text-rose-700',
-	};
-	const labels = { done: 'Done', 'in-progress': 'In Progress', pending: 'Pending' };
-	return (
-		<span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
-			{labels[status] ?? status}
-		</span>
-	);
-};
-
-const PriorityBadge = ({ priority }) => {
-	const map = {
-		urgent: 'bg-purple-100 text-purple-700',
-		high:   'bg-rose-100 text-rose-700',
-		medium: 'bg-amber-100 text-amber-700',
-		low:    'bg-emerald-100 text-emerald-700',
-	};
-	return (
-		<span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${map[priority] ?? 'bg-gray-100 text-gray-600'}`}>
-			{priority}
-		</span>
-	);
-};
-
-const LoadingSpinner = () => (
-	<DashboardLayout activeMenuItem="My Tasks">
-		<div className="flex justify-center items-center h-96">
-			<div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#484bf2]" />
-		</div>
-	</DashboardLayout>
-);
 
 const STATUSES = ['all', 'pending', 'in-progress', 'done'];
 
@@ -96,7 +63,7 @@ const MyTasks = () => {
     })();
 }, [user]);
 
-	if (loading) return <LoadingSpinner />;
+	if (loading) return <DashboardLoading activeMenuItem="My Tasks" />;
 
 	// ── Stats ──────────────────────────────────────────────────────────────────
 	const total      = tasks.length;

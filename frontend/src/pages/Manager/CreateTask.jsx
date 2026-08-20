@@ -4,43 +4,9 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import { FieldError, FieldLabel as Label, FormInput as Input, FormSelect as Select, FormTextarea as Textarea } from '../../components/ui/FormControls';
+import { DashboardLoading } from '../../components/ui/Display';
 
-const Label = ({ children, required }) => (
-	<label className="block text-sm font-medium text-gray-700 mb-1.5">
-		{children} {required && <span className="text-rose-500">*</span>}
-	</label>
-);
-
-const Input = ({ ...props }) => (
-	<input {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400"
-	/>
-);
-
-const Textarea = ({ ...props }) => (
-	<textarea {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors placeholder-gray-400 resize-none"
-	/>
-);
-
-const Select = ({ children, ...props }) => (
-	<select {...props}
-		className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#484bf2]/20 focus:border-[#484bf2] transition-colors bg-white text-gray-700"
-	>
-		{children}
-	</select>
-);
-
-const FieldError = ({ message }) =>
-	message ? <p className="mt-1 text-xs text-rose-500">{message}</p> : null;
-
-const LoadingSpinner = () => (
-	<DashboardLayout activeMenuItem="Projects">
-		<div className="flex justify-center items-center h-96">
-			<div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-[#484bf2]" />
-		</div>
-	</DashboardLayout>
-);
 
 const CreateTask = () => {
 	const navigate = useNavigate();
@@ -229,7 +195,7 @@ const CreateTask = () => {
 
 	const todayStr = new Date().toISOString().split('T')[0];
 
-	if (fetching) return <LoadingSpinner />;
+	if (fetching) return <DashboardLoading activeMenuItem="Projects" />;
 
 	return (
 		<DashboardLayout activeMenuItem="Projects">

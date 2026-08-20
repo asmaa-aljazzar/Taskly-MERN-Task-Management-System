@@ -297,7 +297,7 @@ const deleteProfileImage = async (req, res) => {
 const forgotPassword = async (req, res) => {
 	try {
 		// Get the user email.
-		const { email } = req.body;
+		const email = sanitizeEmail(req.body.email);
 
 		if (!email)
 			return res.status(400).json({
@@ -330,7 +330,8 @@ const forgotPassword = async (req, res) => {
 		await user.save();
 
 		// Build a URL that includes the token
-		const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+		const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+		const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password/${resetToken}`;
 
 		// Log the URL to console
 		console.log("\n" + "=".repeat(60));
@@ -439,8 +440,7 @@ const resetPassword = async (req, res) => {
 		};
 
 		if (password) {
-			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#])[A-Za-z\d@$!%*?&.#]{8,}$/;
-			if (!passwordRegex.test(password)) {
+			if (!validatePassword(password)) {
 				return res.status(400).json({
 					success: false,
 					message: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character'
@@ -453,7 +453,7 @@ const resetPassword = async (req, res) => {
 
 			// Reset and save the hash Password
 			user.password = hashedPassword;
-			user.resetPasswordToken = "";
+			user.resetPasswordToken = undefined;
 			user.resetPasswordExpires = null;
 			await user.save();
 		}

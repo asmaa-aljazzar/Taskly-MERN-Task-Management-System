@@ -37,6 +37,9 @@ app.use (cors());
 // Middleware to automatically parse JSON bodies for all routes.
 app.use (express.json ());
 
+// Render can use this endpoint to confirm that the web service is running.
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
 //!		=== REQUEST DEBUG ===');
 // app.use((req, res, next) => {
 //     console.log('=== REQUEST DEBUG ===');

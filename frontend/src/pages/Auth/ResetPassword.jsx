@@ -61,13 +61,9 @@ const ResetPassword = () => {
 
 		try {
 			const resetUrl = API_PATHS.AUTH.RESET_PASSWORD(token);
-			console.log('Reset URL:', resetUrl);
-
-			const response = await axiosInstance.put(resetUrl, {
+			await axiosInstance.put(resetUrl, {
 				password
 			});
-
-			console.log('Reset response:', response.data);
 			setSuccess(true);
 			toast.success('Password reset successful! Redirecting to login...', {
 				duration: 4000,

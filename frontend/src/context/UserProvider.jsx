@@ -10,6 +10,8 @@ const UserProvider = ({ children }) => {
 	const clearUser = () => {
 		setUser(null);
 		localStorage.removeItem("token");
+		localStorage.removeItem("role");
+		localStorage.removeItem("user");
 	};
 
 	const updateUser = (userData, token) => {
